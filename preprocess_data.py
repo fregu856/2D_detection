@@ -78,7 +78,27 @@ for step, (img_path, label_path) in enumerate(train_data):
     augmented_train_img_paths.append(img_flipped_path)
     augmented_train_img_paths.append(img_path)
 
-    label_flipped_path = label_path # TODO!
+    label_flipped_path = label_path.split(".txt")[0] + "_flipped.txt"
+    label_flipped_file = open(label_flipped_path, "a")
+    with open(label_path) as label_file:
+        for line in label_file:
+            splitted_line = line.split(" ")
+            x_left = float(splitted_line[4])
+            x_right = float(splitted_line[6])
+
+            x_right_flipped = str(new_img_width/2 - (x_left - new_img_width/2))
+            x_left_flipped = str(new_img_width/2 - (x_right - new_img_width/2))
+
+            new_line = (splitted_line[0] + " " + splitted_line[1] + " " + splitted_line[2] +
+                    " " + splitted_line[3] + " " + x_left_flipped + " " + splitted_line[5] +
+                    " " + x_right_flipped + " " + splitted_line[7] + " " + splitted_line[8] +
+                    " " + splitted_line[9] + " " + splitted_line[10] + " " + splitted_line[11] +
+                    " " + splitted_line[12] + " " + splitted_line[13] + " " + splitted_line[14])
+
+            label_flipped_file.write(new_line)
+
+    label_flipped_file.close()
+
     augmented_train_label_paths.append(label_flipped_path)
     augmented_train_label_paths.append(label_path)
 
