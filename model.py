@@ -3,7 +3,7 @@ import tensorflow as tf
 import os
 import cPickle
 
-from utilities import safe_exp, bbox_transform, bbox_transform_inv
+from utilities import safe_exp, bbox_transform, bbox_transform_inv, tensor_IOU
 
 class SqueezeDet_model(object):
     """
@@ -35,6 +35,12 @@ class SqueezeDet_model(object):
         self.anchor_boxes = np.zeros((self.anchors_per_img, 4)) # TODO! (fill this with all anchor x,y,w,h)
 
         self.exp_thresh = 2 # TODO!
+
+        self.epsilon = 0.0001 # TODO!
+
+        self.loss_coeff_class = 1 # TODO!
+        self.loss_coeff_conf_pos = 1 # TODO!
+        self.loss_coeff_conf_neg = 1 # TODO!
 
         #
         self.create_model_dirs()
@@ -78,15 +84,15 @@ class SqueezeDet_model(object):
                     name="input_mask_ph")
 
         # (tensor used to represent anchor deltas, the 4 relative coordinates
-        # to transform the anchor into the "closest" ground truth bbox) # TODO! is this true?
-        self.anchor_delta_input_ph = tf.placeholder(tf.float32,
+        # to transform each anchor into the "closest" ground truth bbox) # TODO! is this true?
+        self.bbox_delta_input_ph = tf.placeholder(tf.float32,
                     shape=[self.batch_size, self.anchors_per_img, 4],
-                    name="anchor_delta_input_ph")
+                    name="bbox_delta_input_ph")
 
-        # (tensor used to represent anchor coordinates and size) # TODO! is this true?
-        self.anchor_input_ph = tf.placeholder(tf.float32,
+        # (tensor used to represent ground truth bbox coordinates and size) # TODO! is this true? is this the coord ans size of the closest ground truth bbox for each anchor?
+        self.bbox_input_ph = tf.placeholder(tf.float32,
                     shape=[self.batch_size, self.anchors_per_img, 4],
-                    name="anchor_input_ph")
+                    name="bbox_input_ph")
 
         # (tensor used to represent class labels (label of the "closest" ground
         # truth bbox for each anchor)) # TODO! is this true?
@@ -116,7 +122,7 @@ class SqueezeDet_model(object):
 
         # TODO!
 
-        # (IOU between predicted and ground truth bboxes)
+        # (IOU between predicted and ground truth bboxes) # TODO! why do I need to initialize this in this weird way?
         self.IOUs = tf.Variable(
                     initial_value=np.zeros((self.batch_size, self.anchors_per_img)),
                     trainable=False, name="IOUs", dtype=tf.float32)
@@ -162,6 +168,8 @@ class SqueezeDet_model(object):
                     [self.batch_size, self.anchors_per_img, self.no_of_classes])
         self.pred_class_probs = pred_class_probs
 
+
+
         # confidence scores:
         no_of_conf_scores = self.anchors_per_gridpoint # (total no of conf scores per grid point)
         pred_conf_scores = preds[:, :, :, no_of_class_probs:no_of_class_probs + no_of_conf_scores]
@@ -170,15 +178,21 @@ class SqueezeDet_model(object):
         pred_conf_scores = tf.sigmoid(pred_conf_scores) # (normalize between 0 and 1)
         self.pred_conf_scores = pred_conf_scores
 
+
+
         # bbox deltas: (the four numbers that describe how to transform the anchor bbox to the predicted bbox)
         pred_bbox_deltas = preds[:, :, :, no_of_class_probs + no_of_conf_scores:]
         pred_bbox_deltas = tf.reshape(pred_bbox_deltas,
                     [self.batch_size, self.anchors_per_img, 4])
         self.pred_bbox_deltas = pred_bbox_deltas
 
+
+
         # number of ground truth objects in the batch (used to normalize bbox and
         # classification loss):
         self.no_of_gt_objects = tf.reduce_sum(self.input_mask_ph)
+
+
 
         # transform the anchor bboxes to predicted bboxes using the predicted bbox deltas:
         delta_x, delta_y, delta_w, delta_h = tf.unstack(self.pred_bbox_deltas, axis=2)
@@ -192,6 +206,8 @@ class SqueezeDet_model(object):
         bbox_center_y = anchor_y + anchor_h*delta_y
         bbox_width = anchor_w*safe_exp(delta_w, self.exp_thresh)
         bbox_height = anchor_h*safe_exp(delta_h, self.exp_thresh)
+
+
 
         # trim the predicted bboxes so that they stay within the image:
         # # get the max and min x and y coordinates for each predicted bbox: (from the predicted center coordinates and height/width. These might be outside of the image (e.g. negative or larger than the img width))
@@ -209,12 +225,75 @@ class SqueezeDet_model(object):
         cx, cy, w, h = bbox_transform_inv([xmin, ymin, xmax, ymax])
         self.pred_bboxes = tf.transpose(tf.stack([cx, cy, w, h]), (1, 2, 0)) # (tf.stack([cx, cy, w, h], axis=2) does the same?)
 
+
+
+        # compute IOU between predicted and ground truth bboxes:
+        # # (modified from the official implementation:)
+        def tensor_IOU(box1, box2):
+            # intersection:
+            xmin = tf.maximum(box1[0], box2[0])
+            ymin = tf.maximum(box1[1], box2[1])
+            xmax = tf.minimum(box1[2], box2[2])
+            ymax = tf.minimum(box1[3], box2[3])
+            w = tf.maximum(0.0, xmax - xmin)
+            h = tf.maximum(0.0, ymax - ymin)
+            intersection_area = w*h
+
+            # union:
+            w1 = box1[2] - box1[0]
+            h1 = box1[3] - box1[1]
+            w2 = box2[2] - box2[0]
+            h2 = box2[3], box2[1]
+            union_area = w1*h1 + w2*h2 - intersection_area
+
+            IOU = intersection_area/(union_area + self.epsilon)
+
+            return IOU
+        pred_bboxes = bbox_transform(tf.unstack(self.pred_bboxes, axis=2))
+        gt_bboxes = bbox_transform(tf.unstack(self.bbox_input_ph, axis=2))
+        IOU = tensor_IOU(pred_bboxes, gt_bboxes)
+        mask = tf.reshape(self.input_mask_ph, [self.batch_size, self.anchors_per_img])
+        masked_IOU = IOU*mask
+        self.IOUs = self.IOUs.assign(masked_IOU)
+
+
+        # (Pr(class | object)*Pr(object) = Pr(class))
+        probs = self.pred_class_probs*tf.reshape(self.pred_conf_scores,
+                    [self.batch_size, self.anchors_per_img, 1])
+        self.detection_classes = tf.argmax(probs, 2) # (for each translated and resized anchor, what object class is most likely to lay in it? # TODO! is this true?)
+        # (self.detection_classes has shape [batch_size, anchors_per_img])
+        self.detection_probs = tf.reduce_max(probs, 2) # (for each translated and resized anchor, what's the probability that the most likely object class lays in it? # TODO! is this true?)
+        # (self.detection_provs has shape [batch_size, anchors_per_img])
+
     def add_loss_op(self):
         """
-        - DOES: .
+        - DOES:
         """
 
-        # TODO!
+        # class cross-entropy:
+        # (cross-entropy: q * -log(p) + (1-q) * -log(1-p)) # TODO! is this the normal def? What is the advantage?
+        # (add a small value into log to prevent blowing up)
+        class_loss = self.labels_ph*(-tf.log(self.pred_class_probs + self.epsilon)) +
+                    (1 - self.labels_ph)*(-tf.log(1 - self.pred_class_probs + self.epsilon))
+        class_loss = self.loss_coeff_class*self.input_mask_ph*class_loss
+        class_loss = tf.reduce_sum(class_loss)
+        class_loss = tf.truediv(class_loss, self.no_of_gt_objects) # (tf.truediv is used to ensure that we get no integer divison # TODO! true?)
+        self.class_loss = class_loss
+        tf.add_to_collection('losses', self.class_loss)
+
+
+
+        # confidence score regression: # TODO! don't understand how this loss matches the one in the paper! Now I actually understand, this works because self.IOUs is masked as well.
+        # TODO! why do we do mean here, i.e. compute loss per img, but not in the other losses? Doesn't the normalization by no_of_gt_objects take care of that? But shouldn't that be per img in that case?
+        input_mask = tf.reshape(self.input_mask_ph, [self.batch_size, self.anchors_per_img])
+        conf_loss_per_img = tf.square(self.IOUs - self.pred_conf_scores)*
+                    (input_mask*self.loss_coeff_conf_pos/self.no_of_gt_objects +
+                    (1 - input_mask)*self.loss_coeff_conf_neg/(self.anchors_per_img-self.no_of_gt_objects)) # TODO! self.anchors_per_img*self.batch_size instead of just self.anchors_per_img?
+        conf_loss_per_img = tf.reduce_sum(conf_loss_per_img, reduction_indices=[1])
+        conf_loss = tf.redice_mean(conf_loss_per_img)
+        self.conf_loss = conf_loss                                    )
+        tf.add_to_collection('losses', self.conf_loss)
+
 
         loss = 0
         self.loss = loss
