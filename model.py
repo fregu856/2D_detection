@@ -3,6 +3,8 @@ import tensorflow as tf
 import os
 import cPickle
 
+from utilities import safe_exp, bbox_transform, bbox_transform_inv
+
 class SqueezeDet_model(object):
     """
     - DOES:
@@ -27,15 +29,19 @@ class SqueezeDet_model(object):
         self.img_width = 1242
         self.batch_size = 4
 
-        self.no_of_anchors = 1 # TODO!
+        self.anchors_per_img = 1 # TODO! # (number of anchors per image)
         self.anchors_per_gridpoint = 3 # TODO!
+
+        self.anchor_boxes = np.zeros((self.anchors_per_img, 4)) # TODO! (fill this with all anchor x,y,w,h)
+
+        self.exp_thresh = 2 # TODO!
 
         #
         self.create_model_dirs()
         #
         self.add_placeholders()
         #
-        self.add_preds() # TODO! change to better name, might have to add more functions too
+        self.add_preds() # TODO! change to better name
         #
         self.add_loss_op()
         #
@@ -68,24 +74,24 @@ class SqueezeDet_model(object):
         # (tensor where an element is 1 if the corresponding anchor is responsible
         # for detecting a ground truth object and 0 otherwise)
         self.input_mask_ph = tf.placeholder(tf.float32,
-                    shape=[self.batch_size, self.no_of_anchors, 1],
+                    shape=[self.batch_size, self.anchors_per_img, 1],
                     name="input_mask_ph")
 
         # (tensor used to represent anchor deltas, the 4 relative coordinates
         # to transform the anchor into the "closest" ground truth bbox) # TODO! is this true?
         self.anchor_delta_input_ph = tf.placeholder(tf.float32,
-                    shape=[self.batch_size, self.no_of_anchors, 4],
+                    shape=[self.batch_size, self.anchors_per_img, 4],
                     name="anchor_delta_input_ph")
 
         # (tensor used to represent anchor coordinates and size) # TODO! is this true?
         self.anchor_input_ph = tf.placeholder(tf.float32,
-                    shape=[self.batch_size, self.no_of_anchors, 4],
+                    shape=[self.batch_size, self.anchors_per_img, 4],
                     name="anchor_input_ph")
 
         # (tensor used to represent class labels (label of the "closest" ground
         # truth bbox for each anchor)) # TODO! is this true?
         self.labels_ph = tf.placeholder(tf.float32,
-                    shape=[self.batch_size, self.no_of_anchors, self.no_of_classes],
+                    shape=[self.batch_size, self.anchors_per_img, self.no_of_classes],
                     name="labels_ph")
 
     def create_feed_dict(self, imgs_batch, drop_prob, training):
@@ -112,7 +118,7 @@ class SqueezeDet_model(object):
 
         # (IOU between predicted and ground truth bboxes)
         self.IOUs = tf.Variable(
-                    initial_value=np.zeros((self.batch_size, self.no_of_anchors)),
+                    initial_value=np.zeros((self.batch_size, self.anchors_per_img)),
                     trainable=False, name="IOUs", dtype=tf.float32)
 
         conv_1 = self.conv_layer("conv_1", self.img_input_ph, filters=64, size=3,
@@ -143,13 +149,65 @@ class SqueezeDet_model(object):
                     stddev=0.0001)
 
     def add_interp_graph(self):
-        # TODO!
+        # TODO! change to a better name
 
         preds = self.preds
 
         # class probabilities:
-        no_of_class_probs = self.anchors_per_gridpoint*self.no_of_classes
-        self.pred_class_probs = tf.reshape( tf.nn.softmax( tf.reshape( preds[:, :, :, :no_of_class_probs], [-1, mc.CLASSES] ) ), [mc.BATCH_SIZE, mc.ANCHORS, mc.CLASSES])
+        no_of_class_probs = self.anchors_per_gridpoint*self.no_of_classes # (K*C) (total no of class probs per grid point)
+        pred_class_logits = preds[:, :, :, :no_of_class_probs]
+        pred_class_logits = tf.reshape(pred_class_logits, [-1, self.no_of_classes])
+        pred_class_probs = tf.nn.softmax(pred_class_logits)
+        pred_class_probs = tf.reshape(pred_class_probs,
+                    [self.batch_size, self.anchors_per_img, self.no_of_classes])
+        self.pred_class_probs = pred_class_probs
+
+        # confidence scores:
+        no_of_conf_scores = self.anchors_per_gridpoint # (total no of conf scores per grid point)
+        pred_conf_scores = preds[:, :, :, no_of_class_probs:no_of_class_probs + no_of_conf_scores]
+        pred_conf_scores = tf.reshape(pred_conf_scores,
+                    [self.batch_size, self.anchors_per_img])
+        pred_conf_scores = tf.sigmoid(pred_conf_scores) # (normalize between 0 and 1)
+        self.pred_conf_scores = pred_conf_scores
+
+        # bbox deltas: (the four numbers that describe how to transform the anchor bbox to the predicted bbox)
+        pred_bbox_deltas = preds[:, :, :, no_of_class_probs + no_of_conf_scores:]
+        pred_bbox_deltas = tf.reshape(pred_bbox_deltas,
+                    [self.batch_size, self.anchors_per_img, 4])
+        self.pred_bbox_deltas = pred_bbox_deltas
+
+        # number of ground truth objects in the batch (used to normalize bbox and
+        # classification loss):
+        self.no_of_gt_objects = tf.reduce_sum(self.input_mask_ph)
+
+        # transform the anchor bboxes to predicted bboxes using the predicted bbox deltas:
+        delta_x, delta_y, delta_w, delta_h = tf.unstack(self.pred_bbox_deltas, axis=2)
+        # (delta_x has shape [batch_size, anchors_per_img]) # TODO! is this true!
+        anchor_x = self.anchor_boxes[:, 0]
+        anchor_y = self.anchor_boxes[:, 1]
+        anchor_w = self.anchor_boxes[:, 2]
+        anchor_h = self.anchor_boxes[:, 3]
+        # # transformation according to eq. (1) in the paper:
+        bbox_center_x = anchor_x + anchor_w*delta_x
+        bbox_center_y = anchor_y + anchor_h*delta_y
+        bbox_width = anchor_w*safe_exp(delta_w, self.exp_thresh)
+        bbox_height = anchor_h*safe_exp(delta_h, self.exp_thresh)
+
+        # trim the predicted bboxes so that they stay within the image:
+        # # get the max and min x and y coordinates for each predicted bbox: (from the predicted center coordinates and height/width. These might be outside of the image (e.g. negative or larger than the img width))
+        xmin, ymin, xmax, ymax = bbox_transform([bbox_center_x, bbox_center_y,
+                    bbox_width, bbox_height])
+        # # limit xmin to be in [0, img_width - 1]:
+        xmin = tf.minimum(tf.maximum(0.0, xmin), self.img_width - 1.0)
+        # # limit ymin to be in [0, img_height - 1]:
+        ymin = tf.minimum(tf.maximum(0.0, ymin), self.img_height - 1.0)
+        # # limit xmax to be in [0, img_width - 1]:
+        xmax = tf.maximum(tf.minimum(self.img_width - 1.0, xmax), 0.0)
+        # # limit ymax to be in [0, img_height - 1]:
+        ymax = tf.maximum(tf.minimum(self.img_height - 1.0, ymax), 0.0)
+        # # transform the trimmed bboxes back to center/width/height format:
+        cx, cy, w, h = bbox_transform_inv([xmin, ymin, xmax, ymax])
+        self.pred_bboxes = tf.transpose(tf.stack([cx, cy, w, h]), (1, 2, 0)) # (tf.stack([cx, cy, w, h], axis=2) does the same?)
 
     def add_loss_op(self):
         """
