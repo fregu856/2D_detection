@@ -53,6 +53,12 @@ class SqueezeDet_model(object):
 
         self.max_grad_norm = 1 # TODO!
 
+        self.load_pretrained_model = False # TODO!
+
+        self.caffemodel_weight = 0 # TODO!
+
+        self.weight_decay = 1 # TODO!
+
         #
         self.create_model_dirs()
         #
@@ -277,8 +283,8 @@ class SqueezeDet_model(object):
         # class cross-entropy:
         # (cross-entropy: q * -log(p) + (1-q) * -log(1-p)) # TODO! is this the normal def? What is the advantage?
         # (add a small value into log to prevent blowing up)
-        class_loss = self.labels_ph*(-tf.log(self.pred_class_probs + self.epsilon)) +
-                    (1 - self.labels_ph)*(-tf.log(1 - self.pred_class_probs + self.epsilon))
+        class_loss = (self.labels_ph*(-tf.log(self.pred_class_probs + self.epsilon)) +
+                    (1 - self.labels_ph)*(-tf.log(1 - self.pred_class_probs + self.epsilon)))
         class_loss = self.loss_coeff_class*self.input_mask_ph*class_loss
         class_loss = tf.reduce_sum(class_loss)
         class_loss = tf.truediv(class_loss, self.no_of_gt_objects) # (tf.truediv is used to ensure that we get no integer divison # TODO! true?)
@@ -288,16 +294,16 @@ class SqueezeDet_model(object):
         # confidence score regression: # TODO! don't understand how this loss matches the one in the paper! Now I actually understand, this works because self.IOUs is masked as well.
         # TODO! why do we do mean here, i.e. compute loss per img, but not in the other losses? Doesn't the normalization by no_of_gt_objects take care of that? But shouldn't that be per img in that case?
         input_mask = tf.reshape(self.input_mask_ph, [self.batch_size, self.anchors_per_img])
-        conf_loss_per_img = tf.square(self.IOUs - self.pred_conf_scores)*
+        conf_loss_per_img = (tf.square(self.IOUs - self.pred_conf_scores)*
                     (input_mask*self.loss_coeff_conf_pos/self.no_of_gt_objects +
-                    (1 - input_mask)*self.loss_coeff_conf_neg/(self.anchors_per_img - self.no_of_gt_objects)) # TODO! self.anchors_per_img*self.batch_size instead of just self.anchors_per_img?
+                    (1 - input_mask)*self.loss_coeff_conf_neg/(self.anchors_per_img - self.no_of_gt_objects))) # TODO! self.anchors_per_img*self.batch_size instead of just self.anchors_per_img?
         conf_loss_per_img = tf.reduce_sum(conf_loss_per_img, reduction_indices=[1])
         conf_loss = tf.reduce_mean(conf_loss_per_img)
-        self.conf_loss = conf_loss                                    )
+        self.conf_loss = conf_loss
         tf.add_to_collection("losses", self.conf_loss)
 
         # bbox regression:
-        bbox_loss = self.input_mask_ph*(self.pred_bbox_deltas - self.bbox_delta_input_ph))
+        bbox_loss = self.input_mask_ph*(self.pred_bbox_deltas - self.bbox_delta_input_ph)
         bbox_loss = self.loss_coeff_bbox*tf.square(bbox_loss)
         bbox_loss = tf.reduce_sum(bbox_loss)
         bbox_loss = tf.truediv(bbox_loss, self.no_of_gt_objects)
@@ -325,17 +331,18 @@ class SqueezeDet_model(object):
 
         self.train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step) # (global_step will now automatically be incremented)
 
-  def fire_layer(self, layer_name, input, s1x1, e1x1, e3x3, stddev=0.01, freeze=False):
+    # (modified from the official implementation)
+    def fire_layer(self, layer_name, input, s1x1, e1x1, e3x3, stddev=0.01, freeze=False):
         """
-        - Fire layer constructor.
+        - Fire layer constructor
 
-        Args:
+        args:
           layer_name: layer name
           input: input tensor
-          s1x1: number of 1x1 filters in squeeze layer.
-          e1x1: number of 1x1 filters in expand layer.
-          e3x3: number of 3x3 filters in expand layer.
-          freeze: if true, do not train parameters in this layer.
+          s1x1: number of 1x1 filters in squeeze layer
+          e1x1: number of 1x1 filters in expand layer
+          e3x3: number of 3x3 filters in expand layer
+          freeze: if true, do not train parameters in this layer
         """
 
         sq1x1 = self.conv_layer(layer_name + "/squeeze1x1", input, filters=s1x1,
@@ -349,10 +356,81 @@ class SqueezeDet_model(object):
 
         return tf.concat([ex1x1, ex3x3], 3)
 
-    def conv_layer(self):
-        # TODO!
+    # (modified from the official implementation)
+    def conv_layer(self, layer_name, input, filters, size, stride, padding="SAME",
+                   freeze=False, xavier=False, relu=True, stddev=0.001):
+        """
+        - Convolutional layer operation constructor
 
-        test = 0
+        args:
+            layer_name: layer name
+            input: input tensor
+            filters: number of output filters
+            size: kernel size
+            stride: stride
+            padding: "SAME" or "VALID"
+            freeze: if true, then do not train the parameters in this layer
+            xavier: whether to use xavier weight initializer or not
+            relu: whether to use relu or not
+            stddev: standard deviation used for random weight initializer
+        """
+
+        # TODO! comment this entire function properly!
+
+        channels = input.get_shape().as_list()[3]
+
+        # get the pretrained parameter values if possible:
+        use_pretrained_params = False
+        if self.load_pretrained_model:
+            cw = self.caffemodel_weight
+            if layer_name in cw:
+                kernel_val = np.transpose(cw[layer_name][0], [2,3,1,0]) # (re-order the caffe kernel with shape [filters, channels, h, w] to a tf kernel with shape [h, w, channels, filters])
+                bias_val = cw[layer_name][1]
+                # check the shape:
+                if kernel_val.shape == (size, size, channels, filters) and (bias_val.shape == (filters, )):
+                    use_pretrained_params = True
+                else:
+                    print "Shape of the pretrained parameter of %s does not match, use randomly initialized parameter" % layer_name
+            else:
+                print "Cannot find %s in the pretrained model. Use randomly initialized parameters" % layer_name
+
+        with tf.variable_scope(layer_name) as scope:
+            # create the parameter initializers:
+            if use_pretrained_params:
+                print "Using pretrained init for " + layer_name
+
+                kernel_init = tf.constant(kernel_val , dtype=tf.float32)
+                bias_init = tf.constant(bias_val, dtype=tf.float32)
+            elif xavier:
+                print "Using Xavier init for " + layer_name
+
+                kernel_init = tf.contrib.layers.xavier_initializer()
+                bias_init = tf.constant_initializer(0.0)
+            else:
+                print "Using random normal init for " + layer_name
+
+                kernel_init = tf.truncated_normal_initializer(stddev=stddev,
+                            dtype=tf.float32)
+                bias_init = tf.constant_initializer(0.0)
+
+            # create the variables:
+            kernel = self.variable_with_weight_decay("kernel",
+                        shape=[size, size, channels, filters], wd=self.weight_decay,
+                        initializer=kernel_init, trainable=(not freeze))
+            biases = tf.get_variable("biases", shape=[filters], dtype=tf.float32,
+                        initializer=bias_init, trainable=(not freeze))
+
+            # convolution:
+            conv = tf.nn.conv2d(input, kernel, strides=[1, stride, stride, 1],
+                        padding=padding) + biases
+
+            # apply ReLu if supposed to:
+            if relu:
+                out = tf.nn.relu(conv)
+            else:
+                out = conv
+
+            return out
 
     # (modified from the official implementation)
     def pooling_layer(self, input, size, stride, padding="SAME"):
@@ -424,3 +502,25 @@ class SqueezeDet_model(object):
                   final_class_inds.append(c)
 
         return final_boxes, final_probs, final_class_inds
+
+    # (modified from the official implementation)
+    def variable_with_weight_decay(self, name, shape, wd, initializer, trainable=True):
+        """
+        creates an initialized Variable with weight decay. Note that the variable
+        is initialized with a truncated normal distribution. A weight decay is
+        added only if one is specified.
+
+        args:
+            name: name of the variable
+            shape: list of ints
+            wd: add L2Loss weight decay multiplied by this float. If None, weight
+                decay is not added for this Variable.
+        """
+
+        var = tf.get_variable(name, shape=shape, dtype=tf.float32,
+                    initializer=initializer, trainable=trainable)
+        if wd is not None and trainable:
+            weight_decay = wd*tf.nn.l2_loss(var)
+            tf.add_to_collection("losses", weight_decay)
+
+        return var
