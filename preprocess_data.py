@@ -4,6 +4,10 @@ import os
 import numpy as np
 import random
 
+from utilities import bbox_transform_inv
+
+# TODO! comment this entire file properly!
+
 project_dir = "/home/fregu856/2D_detection/"
 KITTI_dir = "/home/fregu856/data/KITTI/"
 
@@ -47,16 +51,7 @@ no_of_imgs = len(orig_train_img_paths)
 train_data = orig_train_data[:int(no_of_imgs*0.8)]
 val_data = orig_train_data[-int(no_of_imgs*0.2):]
 
-train_img_paths, train_label_paths = zip(*train_data)
 val_img_paths, val_label_paths = zip(*val_data)
-
-cPickle.dump(train_label_paths,
-            open(project_dir + "data/train_label_paths.pkl", "w"))
-cPickle.dump(train_img_paths,
-            open(project_dir + "data/train_img_paths.pkl", "w"))
-# train_label_paths = cPickle.load(open(project_dir + "data/train_label_paths.pkl"))
-# train_img_paths = cPickle.load(open(project_dir + "data/train_img_paths.pkl"))
-
 cPickle.dump(val_label_paths,
             open(project_dir + "data/val_label_paths.pkl", "w"))
 cPickle.dump(val_img_paths,
@@ -108,15 +103,65 @@ random.shuffle(augmented_train_data)
 random.shuffle(augmented_train_data)
 random.shuffle(augmented_train_data)
 
-augmented_train_img_paths, augmented_train_label_paths = zip(*augmented_train_data)
+train_data = augmented_train_data
+train_img_paths, train_label_paths = zip(*train_data)
+cPickle.dump(train_label_paths,
+            open(project_dir + "data/train_label_paths.pkl", "w"))
+cPickle.dump(train_img_paths,
+            open(project_dir + "data/train_img_paths.pkl", "w"))
+# train_label_paths = cPickle.load(open(project_dir + "data/train_label_paths.pkl"))
+# train_img_paths = cPickle.load(open(project_dir + "data/train_img_paths.pkl"))
 
-cPickle.dump(augmented_train_label_paths,
-            open(project_dir + "data/augmented_train_label_paths.pkl", "w"))
-cPickle.dump(augmented_train_img_paths,
-            open(project_dir + "data/augmented_train_img_paths.pkl", "w"))
-# augmented_train_label_paths = cPickle.load(open(project_dir + "data/augmented_train_label_paths.pkl"))
-# augmented_train_img_paths = cPickle.load(open(project_dir + "data/augmented_train_img_paths.pkl"))
 
+
+
+
+train_bboxes_per_img = []
+for label_path in train_label_paths:
+    bboxes = []
+
+    with open(label_path) as label_file:
+        for line in label_file:
+            splitted_line = line.split(" ")
+            bbox_class = splitted_line[0].lower().strip()
+            if bbox_class not in ["car", "cyclist", "pedestrian"]:
+                break
+            x_min = float(splitted_line[4])
+            y_min = float(splitted_line[5])
+            x_max = float(splitted_line[6])
+            y_max = float(splitted_line[7])
+
+            c_x, c_y, w, h = bbox_transform_inv([x_min, y_min, x_max, y_max])
+
+            bboxes.append([c_x, c_y, w, h, bbox_class])
+
+    train_bboxes_per_img.append(bboxes)
+cPickle.dump(train_bboxes_per_img,
+            open(project_dir + "data/train_bboxes_per_img.pkl", "w"))
+
+val_bboxes_per_img = []
+for label_path in val_label_paths:
+    bboxes = []
+
+    with open(label_path) as label_file:
+        for line in label_file:
+            splitted_line = line.split(" ")
+            bbox_class = splitted_line[0].lower().strip()
+            if bbox_class not in ["car", "cyclist", "pedestrian"]:
+                break
+            x_min = float(splitted_line[4])
+            y_min = float(splitted_line[5])
+            x_max = float(splitted_line[6])
+            y_max = float(splitted_line[7])
+
+            c_x, c_y, w, h = bbox_transform_inv([x_min, y_min, x_max, y_max])
+
+            bboxes.append([c_x, c_y, w, h, bbox_class])
+
+    val_bboxes_per_img.append(bboxes)
+
+cPickle.dump(val_bboxes_per_img,
+            open(project_dir + "data/val_bboxes_per_img.pkl", "w"))
 
 
 

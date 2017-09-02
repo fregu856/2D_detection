@@ -239,30 +239,9 @@ class SqueezeDet_model(object):
         self.pred_bboxes = tf.transpose(tf.stack([cx, cy, w, h]), (1, 2, 0)) # (tf.stack([cx, cy, w, h], axis=2) does the same?)
 
         # compute IOU between predicted and ground truth bboxes:
-        # # (modified from the official implementation:)
-        def tensor_IOU(box1, box2):
-            # intersection:
-            xmin = tf.maximum(box1[0], box2[0])
-            ymin = tf.maximum(box1[1], box2[1])
-            xmax = tf.minimum(box1[2], box2[2])
-            ymax = tf.minimum(box1[3], box2[3])
-            w = tf.maximum(0.0, xmax - xmin)
-            h = tf.maximum(0.0, ymax - ymin)
-            intersection_area = w*h
-
-            # union:
-            w1 = box1[2] - box1[0]
-            h1 = box1[3] - box1[1]
-            w2 = box2[2] - box2[0]
-            h2 = box2[3], box2[1]
-            union_area = w1*h1 + w2*h2 - intersection_area
-
-            IOU = intersection_area/(union_area + self.epsilon) # TODO! is epsilon really needed? Doesn't use it in utilities.batch_IOU
-
-            return IOU
         pred_bboxes = bbox_transform(tf.unstack(self.pred_bboxes, axis=2))
         gt_bboxes = bbox_transform(tf.unstack(self.bbox_input_ph, axis=2))
-        IOU = tensor_IOU(pred_bboxes, gt_bboxes)
+        IOU = self.tensor_IOU(pred_bboxes, gt_bboxes)
         mask = tf.reshape(self.input_mask_ph, [self.batch_size, self.anchors_per_img])
         masked_IOU = IOU*mask
         self.IOUs = self.IOUs.assign(masked_IOU)
@@ -524,3 +503,25 @@ class SqueezeDet_model(object):
             tf.add_to_collection("losses", weight_decay)
 
         return var
+
+    # (modified from the official implementation:)
+    def tensor_IOU(self, box1, box2):
+        # intersection:
+        xmin = tf.maximum(box1[0], box2[0])
+        ymin = tf.maximum(box1[1], box2[1])
+        xmax = tf.minimum(box1[2], box2[2])
+        ymax = tf.minimum(box1[3], box2[3])
+        w = tf.maximum(0.0, xmax - xmin)
+        h = tf.maximum(0.0, ymax - ymin)
+        intersection_area = w*h
+
+        # union:
+        w1 = box1[2] - box1[0]
+        h1 = box1[3] - box1[1]
+        w2 = box2[2] - box2[0]
+        h2 = box2[3], box2[1]
+        union_area = w1*h1 + w2*h2 - intersection_area
+
+        IOU = intersection_area/(union_area + self.epsilon) # TODO! is epsilon really needed? Doesn't use it in utilities.batch_IOU
+
+        return IOU

@@ -2,22 +2,22 @@ import cv2
 import tensorflow as tf
 
 def visualize_gt_label(img_path, label_path):
-    class_to_color = {"Car": (255, 191, 0),
-                      "Cyclist": (0, 191, 255),
-                      "Pedestrian": (255, 0, 191)}
+    class_to_color = {"car": (255, 191, 0),
+                      "cyclist": (0, 191, 255),
+                      "pedestrian": (255, 0, 191)}
 
     img = cv2.imread(img_path, -1)
 
     with open(label_path) as label_file:
         for line in label_file:
             splitted_line = line.split(" ")
-            bbox_class = splitted_line[0]
-            if bbox_class not in ["Car", "Cyclist", "Pedestrian"]:
+            bbox_class = splitted_line[0].lower().strip()
+            if bbox_class not in ["car", "cyclist", "pedestrian"]:
                 break
             x_left = int(float(splitted_line[4]))
-            y_top = int(float(splitted_line[5]))
+            y_bottom = int(float(splitted_line[5]))
             x_right = int(float(splitted_line[6]))
-            y_bottom = int(float(splitted_line[7]))
+            y_top = int(float(splitted_line[7]))
 
             cv2.rectangle(img, (x_left, y_top), (x_right, y_bottom), class_to_color[bbox_class], 2)
 
@@ -69,8 +69,8 @@ def bbox_transform_inv(bbox):
 
     w = xmax - xmin + 1.0
     h = ymax - ymin + 1.0
-    cx  = xmin + width/2
-    cy  = ymin + height/2
+    cx  = xmin + w/2
+    cy  = ymin + h/2
 
     out_box = [cx, cy, w, h]
 
@@ -131,3 +131,26 @@ def batch_IOU(boxes, box):
     IOUs = intersecton_area/union_area
 
     return IOUs
+
+# (modified from the official implementation)
+def sparse_to_dense(sp_indices, output_shape, values, default_value=0):
+    """
+    build a dense matrix from sparse representations
+
+    args:
+        sp_indices: a [0-2]-D array that contains the index to place values.
+        output_shape: shape of the dense matrix
+        values: a {0,1}-D array where values corresponds to the index in each row of sp_indices
+        default_value: values to set for indices not specified in sp_indices
+
+    returns:
+        a dense numpy N-D array with shape output_shape
+    """
+
+    # TODO! understand how this works!
+
+    array = np.ones(output_shape)*default_value
+    for idx, value in zip(sp_indices, values):
+        array[tuple(idx)] = value
+
+    return array
