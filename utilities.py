@@ -25,6 +25,17 @@ def visualize_gt_label(img_path, label_path):
     img_with_bboxes = img
     return img_with_bboxes
 
+def draw_bboxes(img, bboxes):
+    color = (255, 191, 0)
+
+    for bbox in bboxes:
+        xmin, ymin, xmax, ymax = bbox_transform(bbox)
+
+        cv2.rectangle(img, (int(xmin), int(ymax)), (int(xmax), int(ymin)), color, 2)
+
+    img_with_bboxes = img
+    return img_with_bboxes
+
 # (taken from the official implementation)
 def safe_exp(w, thresh):
     """
@@ -153,3 +164,18 @@ def sparse_to_dense(indices, output_shape, values, default_value=0):
         array[tuple(idx)] = value
 
     return array
+
+# (modified from utils/caffemodel2pkl.py in the official implementation)
+def get_caffemodel_weights(prototxt_path, caffemodel_path):
+    import caffe
+
+    net = caffe.Net(prototxt_path, caffemodel_path, caffe.TEST)
+    weights = {}
+    no_of_layers = len(net.layers)
+    for i in range(no_of_layers):
+        layer_name = net._layer_names[i]
+        layer = net.layers[i]
+        layer_blobs = [o.data for o in layer.blobs]
+        weights[layer_name] = layer_blobs
+
+    return weights

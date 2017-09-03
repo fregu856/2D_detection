@@ -4,6 +4,7 @@ import os
 import cPickle
 
 from utilities import safe_exp, bbox_transform, bbox_transform_inv, nms
+from utilities import get_caffemodel_weights
 
 class SqueezeDet_model(object):
     """
@@ -15,18 +16,23 @@ class SqueezeDet_model(object):
         - DOES:
         """
 
+        # TODO! group all the params in a nicer way, also comment what they're for
+
         self.model_id = model_id
 
-        self.logs_dir = "/home/fregu856/2D_detection/training_logs/"
-        #self.logs_dir = "/root/2D_detection/training_logs/"
+        self.project_dir = "/home/fregu856/2D_detection/"
+        #self.project_dir = "/root/2D_detection/"
+
+        self.logs_dir =  self.project_dir + "training_logs/"
 
         self.no_of_classes = 3
         self.class_string_to_label = {"car": 0, "pedestrian": 1, "cyclist": 2}
         #self.class_weights = cPickle.load(open("data/class_weights.pkl"))
 
-        self.initial_lr = 1e-5 # TODO! change this according to the paper
-        self.decay_steps =  3000 # TODO! change this according to the paper
-        self.lr_decay_rate = 0.96 # TODO! change this according to the paper
+        self.initial_lr = 0.01
+        self.decay_steps =  10000
+        self.lr_decay_rate = 0.5
+
         self.img_height = 375
         self.img_width = 1242
         self.batch_size = 4
@@ -35,30 +41,27 @@ class SqueezeDet_model(object):
         self.anchors_per_img = len(self.anchor_bboxes)
         self.anchors_per_gridpoint = 9
 
-        self.exp_thresh = 2 # TODO!
+        self.exp_thresh = 1.0
+        self.epsilon = 1e-16
+        self.top_N_detections = 64
+        self.prob_thresh = 0.005
+        self.nms_thresh = 0.4
 
-        self.epsilon = 0.0001 # TODO!
+        self.loss_coeff_class = 1.0
+        self.loss_coeff_conf_pos = 75.0
+        self.loss_coeff_conf_neg = 100.0
+        self.loss_coeff_bbox = 5.0
 
-        self.top_N_detections = 3 # TODO!
+        self.momentum = 0.9
+        self.max_grad_norm = 1.0
 
-        self.prob_thresh = 0.1 # TODO!
+        self.load_pretrained_model = True
 
-        self.nms_thresh = 0.1 # TODO!
+        prototxt_path = self.project_dir + "data/deploy.prototxt"
+        caffemodel_path = self.project_dir + "data/squeezenet_v1.0.caffemodel"
+        self.caffemodel_weights = get_caffemodel_weights(prototxt_path, caffemodel_path)
 
-        self.loss_coeff_class = 1 # TODO!
-        self.loss_coeff_conf_pos = 1 # TODO!
-        self.loss_coeff_conf_neg = 1 # TODO!
-        self.loss_coeff_bbox = 1 # TODO!
-
-        self.momentum = 1 # TODO!
-
-        self.max_grad_norm = 1 # TODO!
-
-        self.load_pretrained_model = False # TODO!
-
-        self.caffemodel_weight = 0 # TODO!
-
-        self.weight_decay = 1 # TODO!
+        self.weight_decay = 0.0001
 
         #
         self.create_model_dirs()
@@ -149,25 +152,28 @@ class SqueezeDet_model(object):
         - DOES:
         """
 
-        conv_1 = self.conv_layer("conv_1", self.imgs_ph, filters=64, size=3,
+        # (note that the layer names ("conv1", "fire2" etc.) below must match the
+        # names in the pretrained model!)
+
+        conv_1 = self.conv_layer("conv1", self.imgs_ph, filters=64, size=3,
                     stride=2, padding="SAME", freeze=True)
         pool_1 = self.pooling_layer(conv_1, size=3, stride=2, padding="SAME")
 
-        fire_2 = self.fire_layer("fire_2", pool_1, s1x1=16, e1x1=64, e3x3=64, freeze=False)
-        fire_3 = self.fire_layer("fire_3", fire_2, s1x1=16, e1x1=64, e3x3=64, freeze=False)
+        fire_2 = self.fire_layer("fire2", pool_1, s1x1=16, e1x1=64, e3x3=64, freeze=False)
+        fire_3 = self.fire_layer("fire3", fire_2, s1x1=16, e1x1=64, e3x3=64, freeze=False)
         pool_3 = self.pooling_layer(fire_3, size=3, stride=2, padding="SAME")
 
-        fire_4 = self.fire_layer("fire_4", pool_3, s1x1=32, e1x1=128, e3x3=128, freeze=False)
-        fire_5 = self.fire_layer("fire_5", fire_4, s1x1=32, e1x1=128, e3x3=128, freeze=False)
+        fire_4 = self.fire_layer("fire4", pool_3, s1x1=32, e1x1=128, e3x3=128, freeze=False)
+        fire_5 = self.fire_layer("fire5", fire_4, s1x1=32, e1x1=128, e3x3=128, freeze=False)
         pool_5 = self.pooling_layer(fire_5, size=3, stride=2, padding="SAME")
 
-        fire_6 = self.fire_layer("fire_6", pool_5, s1x1=48, e1x1=192, e3x3=192, freeze=False)
-        fire_7 = self.fire_layer("fire_7", fire_6, s1x1=48, e1x1=192, e3x3=192, freeze=False)
-        fire_8 = self.fire_layer("fire_8", fire_7, s1x1=64, e1x1=256, e3x3=256, freeze=False)
-        fire_9 = self.fire_layer("fire_9", fire_8, s1x1=64, e1x1=256, e3x3=256, freeze=False)
+        fire_6 = self.fire_layer("fire6", pool_5, s1x1=48, e1x1=192, e3x3=192, freeze=False)
+        fire_7 = self.fire_layer("fire7", fire_6, s1x1=48, e1x1=192, e3x3=192, freeze=False)
+        fire_8 = self.fire_layer("fire8", fire_7, s1x1=64, e1x1=256, e3x3=256, freeze=False)
+        fire_9 = self.fire_layer("fire9", fire_8, s1x1=64, e1x1=256, e3x3=256, freeze=False)
 
         # (two extra fire modules that are not trained before)
-        fire_10 = self.fire_layer("fire_10", fire_9, s1x1=96, e1x1=384, e3x3=384, freeze=False)
+        fire_10 = self.fire_layer("fire10", fire_9, s1x1=96, e1x1=384, e3x3=384, freeze=False)
         fire_11 = self.fire_layer("fire11", fire_10, s1x1=96, e1x1=384, e3x3=384, freeze=False)
         dropout_11 = tf.nn.dropout(fire_11, self.keep_prob_ph, name="dropout_11")
 
@@ -286,7 +292,7 @@ class SqueezeDet_model(object):
         tf.add_to_collection("losses", self.conf_loss)
 
         # bbox regression:
-        bbox_loss = self.input_mask_ph*(self.pred_bbox_deltas - self.gt_deltas_ph)
+        bbox_loss = self.mask_ph*(self.pred_bbox_deltas - self.gt_deltas_ph)
         bbox_loss = self.loss_coeff_bbox*tf.square(bbox_loss)
         bbox_loss = tf.reduce_sum(bbox_loss)
         bbox_loss = tf.truediv(bbox_loss, self.no_of_gt_objects)
@@ -328,6 +334,9 @@ class SqueezeDet_model(object):
           freeze: if true, do not train parameters in this layer
         """
 
+        # (note that the layer names ("/squeeze1x1" etc.) below must match the
+        # names in the pretrained model!)
+
         sq1x1 = self.conv_layer(layer_name + "/squeeze1x1", input, filters=s1x1,
                     size=1, stride=1, padding="SAME", stddev=stddev, freeze=freeze)
 
@@ -365,7 +374,7 @@ class SqueezeDet_model(object):
         # get the pretrained parameter values if possible:
         use_pretrained_params = False
         if self.load_pretrained_model:
-            cw = self.caffemodel_weight
+            cw = self.caffemodel_weights
             if layer_name in cw:
                 kernel_val = np.transpose(cw[layer_name][0], [2,3,1,0]) # (re-order the caffe kernel with shape [filters, channels, h, w] to a tf kernel with shape [h, w, channels, filters])
                 bias_val = cw[layer_name][1]
@@ -400,7 +409,7 @@ class SqueezeDet_model(object):
             kernel = self.variable_with_weight_decay("kernel",
                         shape=[size, size, channels, filters], wd=self.weight_decay,
                         initializer=kernel_init, trainable=(not freeze))
-            biases = tf.get_variable("biases", shape=[filters], dtype=tf.float32,
+            biases = self.get_variable("biases", shape=[filters], dtype=tf.float32,
                         initializer=bias_init, trainable=(not freeze))
 
             # convolution:
@@ -500,11 +509,26 @@ class SqueezeDet_model(object):
                 decay is not added for this Variable.
         """
 
-        var = tf.get_variable(name, shape=shape, dtype=tf.float32,
+        var = self.get_variable(name, shape=shape, dtype=tf.float32,
                     initializer=initializer, trainable=trainable)
         if wd is not None and trainable:
             weight_decay = wd*tf.nn.l2_loss(var)
             tf.add_to_collection("losses", weight_decay)
+
+        return var
+
+    # (modified from the official implementation)
+    def get_variable(self, name, shape, dtype, initializer, trainable=True):
+        # this wrapper function is needed because when the initializer is a
+        # constant (kernel_init = tf.constant(kernel_val , dtype=tf.float32)),
+        # you should not specify the shape in tf.get_variable
+
+        if not callable(initializer):
+            var = tf.get_variable(name, dtype=dtype, initializer=initializer,
+                        trainable=trainable)
+        else:
+            var = tf.get_variable(name, shape, dtype=dtype, initializer=initializer,
+                        trainable=trainable)
 
         return var
 
@@ -523,7 +547,7 @@ class SqueezeDet_model(object):
         w1 = box1[2] - box1[0]
         h1 = box1[3] - box1[1]
         w2 = box2[2] - box2[0]
-        h2 = box2[3], box2[1]
+        h2 = box2[3] - box2[1]
         union_area = w1*h1 + w2*h2 - intersection_area
 
         IOU = intersection_area/(union_area + self.epsilon) # TODO! is epsilon really needed? Doesn't use it in utilities.batch_IOU

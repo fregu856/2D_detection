@@ -10,7 +10,7 @@ import random
 
 from model import SqueezeDet_model
 
-from utilities import sparse_to_dense, batch_IOU
+from utilities import sparse_to_dense, batch_IOU, draw_bboxes
 
 project_dir = "/home/fregu856/2D_detection/"
 #project_dir = "/root/2D_segmentation/"
@@ -37,7 +37,7 @@ train_data = zip(train_img_paths, train_bboxes_per_img)
 no_of_train_imgs = len(train_img_paths)
 no_of_batches = int(no_of_train_imgs/batch_size)
 
-def evaluate_on_val(batch_size):
+def evaluate_on_val():
     """
     - DOES:
     """
@@ -47,7 +47,7 @@ def evaluate_on_val(batch_size):
     val_loss = 0
     return val_loss
 
-def train_data_iterator(batch_size):
+def train_data_iterator():
     """
     - DOES:
     """
@@ -199,7 +199,7 @@ def train_data_iterator(batch_size):
 
         batch_pointer += batch_size
 
-        yield (batch_imgs, batch_mask, batch_gt_deltas, batch_gt_bboxes, batch_class_labels)
+        yield (batch_imgs, batch_mask, batch_gt_deltas, batch_gt_bboxes, batch_class_labels, mask_indices)
 
 no_of_epochs = 100
 
@@ -227,18 +227,43 @@ with tf.Session() as sess:
 
         # run an epoch and get all batch losses:
         batch_losses = []
-        for step, (imgs, mask, gt_deltas, gt_bboxes, class_labels) in enumerate(train_data_iterator()):
+        for step, (imgs, mask, gt_deltas, gt_bboxes, class_labels, mask_indices) in enumerate(train_data_iterator()):
             # create a feed dict containing the batch data:
             batch_feed_dict = model.create_feed_dict(imgs, 0.8, mask=mask,
                         gt_deltas=gt_deltas, gt_bboxes=gt_bboxes,
                         class_labels=class_labels)
 
+            # TODO! study each component of the loss!
             # compute the batch loss and compute & apply all gradients w.r.t to
             # the batch loss (without model.train_op in the call, the network
             # would NOT train, we would only compute the batch loss):
-            batch_loss, _ = sess.run([model.loss, model.train_op],
+            batch_loss, _, pred_bboxes  = sess.run([model.loss, model.train_op, model.pred_bboxes],
                         feed_dict=batch_feed_dict)
             batch_losses.append(batch_loss)
+
+
+
+
+            # # TODO! also visualize different classes. Also, I guess you would assume these to look quite good quite quickly since we look at the assigned anchors
+            # filtered_pred_bboxes = [] # bboxes corr to the first batch img
+            # filtered_gt_bboxes = [] # bboxes corr to the first batch img
+            # for idx in mask_indices:
+            #     img_idx = idx[0]
+            #     if img_idx == 0:
+            #         pred_bbox = pred_bboxes[tuple(idx)]
+            #         gt_bbox = gt_bboxes[tuple(idx)]
+            #         filtered_pred_bboxes.append(pred_bbox)
+            #         filtered_gt_bboxes.append(gt_bbox)
+            #
+            # gt_img = draw_bboxes(imgs[0].copy(), filtered_gt_bboxes)
+            # pred_img = draw_bboxes(imgs[0].copy(), filtered_pred_bboxes)
+            #
+            # cv2.imwrite("/home/fregu856/2D_detection/" + str(step) + "_gt.png", gt_img)
+            # cv2.imwrite("/home/fregu856/2D_detection/" + str(step) + "_pred.png", pred_img)
+
+
+
+
 
             print "step: %d/%d, training batch loss: %g" % (step+1, no_of_batches, batch_loss)
 
@@ -252,7 +277,7 @@ with tf.Session() as sess:
         print "training loss: %g" % train_epoch_loss
 
         # run the model on the validation data:
-        val_loss = evaluate_on_val(batch_size, sess)
+        val_loss = evaluate_on_val()
         # save the val epoch loss:
         val_loss_per_epoch.append(val_loss)
         # save the val epoch losses to disk:
