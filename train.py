@@ -189,11 +189,9 @@ def train():
 
     def load_data():
         # read batch input
-        image_per_batch, label_per_batch, box_delta_per_batch, aidx_per_batch, \
-          bbox_per_batch = imdb.read_batch()
+        image_per_batch, label_per_batch, box_delta_per_batch, aidx_per_batch, bbox_per_batch = imdb.read_batch()
 
-        label_indices, bbox_indices, box_delta_values, mask_indices, box_values, \
-          = [], [], [], [], []
+        label_indices, bbox_indices, box_delta_values, mask_indices, box_values  = [], [], [], [], []
         aidx_set = set()
         num_discarded_labels = 0
         num_labels = 0
@@ -259,7 +257,8 @@ def read_batch(model):
         bbox_per_batch: bounding boxes. Shape: batch_size x object_num x 4 ([cx, cy, w, h])
     """
 
-    self.rois = cPickle.load(open(data_dir + "train_bboxes_per_img.pkl"))
+    bboxes_per_img = cPickle.load(open(data_dir + "train_bboxes_per_img.pkl"))
+    img_paths = cPickle.load(open(data_dir + "train_img_paths.pkl"))
 
     image_per_batch = []
     label_per_batch = []
@@ -267,55 +266,52 @@ def read_batch(model):
     delta_per_batch = []
     aidx_per_batch  = []
 
-    for idx in batch_idx:
+    batch_size = 4
+
+    for i in range(batch_size):
+        img_path = img_paths[i]
+        bboxes = bboxes_per_img[i]
+
         # load the image
-        img = cv2.imread(self._image_path_at(idx)).astype(np.float32, copy=False)
+        img = cv2.imread(img_path, -1).astype(np.float32)
+        image_per_batch.append(img)
         orig_h, orig_w, _ = [float(v) for v in img.shape]
 
         # load annotations
-        label_per_batch.append([b[4] for b in self.rois[idx][:]])
-        gt_bbox = np.array([[b[0], b[1], b[2], b[3]] for b in self.rois[idx][:]])
+        label_per_batch.append([b[4] for b in bboxes])
+        gt_bbox = np.array([[b[0], b[1], b[2], b[3]] for b in bboxes])
         bbox_per_batch.append(gt_bbox)
 
         aidx_per_image, delta_per_image = [], []
         aidx_set = set()
         for i in range(len(gt_bbox)):
-            overlaps = batch_iou(mc.ANCHOR_BOX, gt_bbox[i])
+            overlaps = batch_iou(model.anchor_boxes, gt_bbox[i])
 
-            aidx = len(mc.ANCHOR_BOX)
+            aidx = len(model.anchor_boxes)
             for ov_idx in np.argsort(overlaps)[::-1]:
                 if overlaps[ov_idx] <= 0:
-                    if mc.DEBUG_MODE:
-                        min_iou = min(overlaps[ov_idx], min_iou)
-                        num_objects += 1
-                        num_zero_iou_obj += 1
                     break
                 if ov_idx not in aidx_set:
                     aidx_set.add(ov_idx)
                     aidx = ov_idx
-                    if mc.DEBUG_MODE:
-                        max_iou = max(overlaps[ov_idx], max_iou)
-                        min_iou = min(overlaps[ov_idx], min_iou)
-                        avg_ious += overlaps[ov_idx]
-                        num_objects += 1
                     break
 
-                if aidx == len(mc.ANCHOR_BOX):
-                    # even the largeset available overlap is 0, thus, choose one with the
-                    # smallest square distance
-                    dist = np.sum(np.square(gt_bbox[i] - mc.ANCHOR_BOX), axis=1)
-                    for dist_idx in np.argsort(dist):
-                        if dist_idx not in aidx_set:
-                            aidx_set.add(dist_idx)
-                            aidx = dist_idx
-                            break
+            if aidx == len(model.anchor_boxes):
+                # even the largeset available overlap is 0, thus, choose one with the
+                # smallest square distance
+                dist = np.sum(np.square(gt_bbox[i] - model.anchor_boxes), axis=1)
+                for dist_idx in np.argsort(dist):
+                    if dist_idx not in aidx_set:
+                        aidx_set.add(dist_idx)
+                        aidx = dist_idx
+                        break
 
             box_cx, box_cy, box_w, box_h = gt_bbox[i]
             delta = [0]*4
-            delta[0] = (box_cx - mc.ANCHOR_BOX[aidx][0])/mc.ANCHOR_BOX[aidx][2]
-            delta[1] = (box_cy - mc.ANCHOR_BOX[aidx][1])/mc.ANCHOR_BOX[aidx][3]
-            delta[2] = np.log(box_w/mc.ANCHOR_BOX[aidx][2])
-            delta[3] = np.log(box_h/mc.ANCHOR_BOX[aidx][3])
+            delta[0] = (box_cx - model.anchor_boxes[aidx][0])/model.anchor_boxes[aidx][2]
+            delta[1] = (box_cy - model.anchor_boxes[aidx][1])/model.anchor_boxes[aidx][3]
+            delta[2] = np.log(box_w/model.anchor_boxes[aidx][2])
+            delta[3] = np.log(box_h/model.anchor_boxes[aidx][3])
 
             aidx_per_image.append(aidx)
             delta_per_image.append(delta)

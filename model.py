@@ -17,10 +17,11 @@ class SqueezeDet_model(object):
 
         self.model_id = model_id
 
-        #self.logs_dir = "/home/fregu856/segmentation/training_logs/"
-        self.logs_dir = "/root/2D_detection/training_logs/"
+        self.logs_dir = "/home/fregu856/2D_detection/training_logs/"
+        #self.logs_dir = "/root/2D_detection/training_logs/"
+
         self.no_of_classes = 3
-        self.class_weights = cPickle.load(open("data/class_weights.pkl"))
+        #self.class_weights = cPickle.load(open("data/class_weights.pkl"))
 
         self.initial_lr = 1e-5 # TODO! change this according to the paper
         self.decay_steps =  3000 # TODO! change this according to the paper
@@ -29,10 +30,9 @@ class SqueezeDet_model(object):
         self.img_width = 1242
         self.batch_size = 4
 
-        self.anchors_per_img = 1 # TODO! # (number of anchors per image)
-        self.anchors_per_gridpoint = 3 # TODO!
-
-        self.anchor_boxes = np.zeros((self.anchors_per_img, 4)) # TODO! (fill this with all anchor x,y,w,h)
+        self.anchor_boxes = self.set_anchors() # (anchor_boxes has shape [anchors_per_img, 4])
+        self.anchors_per_img = len(self.anchor_boxes)
+        self.anchors_per_gridpoint = 9
 
         self.exp_thresh = 2 # TODO!
 
@@ -525,3 +525,46 @@ class SqueezeDet_model(object):
         IOU = intersection_area/(union_area + self.epsilon) # TODO! is epsilon really needed? Doesn't use it in utilities.batch_IOU
 
         return IOU
+
+    # (taken from the official implementation:)
+    def set_anchors(self):
+        # TODO! understand this code!
+
+        H, W, B = 24, 78, 9
+
+        anchor_shapes = np.reshape(
+            [np.array(
+                [[  36.,  37.], [ 366., 174.], [ 115.,  59.],
+                [ 162.,  87.], [  38.,  90.], [ 258., 173.],
+                [ 224., 108.], [  78., 170.], [  72.,  43.]])]*H*W,
+            (H, W, B, 2)
+        )
+
+        center_x = np.reshape(
+            np.transpose(
+                np.reshape(
+                    np.array([np.arange(1, W+1)*float(self.img_width)/(W+1)]*H*B),
+                    (B, H, W)
+                ),
+                (1, 2, 0)
+            ),
+            (H, W, B, 1)
+        )
+
+        center_y = np.reshape(
+            np.transpose(
+                np.reshape(
+                    np.array([np.arange(1, H+1)*float(self.img_height)/(H+1)]*W*B),
+                    (B, W, H)
+                ),
+                (2, 1, 0)
+            ),
+            (H, W, B, 1)
+        )
+
+        anchors = np.reshape(
+            np.concatenate((center_x, center_y, anchor_shapes), axis=3),
+            (-1, 4)
+        )
+
+        return anchors

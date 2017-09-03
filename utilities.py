@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import tensorflow as tf
 
 def visualize_gt_label(img_path, label_path):
@@ -122,35 +123,33 @@ def batch_IOU(boxes, box):
     intersect_ymax = np.minimum(boxes[:, 1] + 0.5*boxes[:, 3], box[1] + 0.5*box[3])
     intersect_ymin = np.maximum(boxes[:, 1] - 0.5*boxes[:, 3], box[1] - 0.5*box[3])
 
-    intersect_w = tf.maximum(0.0, intersect_xmax - intersect_xmin)
-    intersect_h = tf.maximum(0.0, intersect_ymax - intersect_ymin)
+    intersect_w = np.maximum(0.0, intersect_xmax - intersect_xmin)
+    intersect_h = np.maximum(0.0, intersect_ymax - intersect_ymin)
     intersection_area = intersect_w*intersect_h
 
     union_area = boxes[:, 2]*boxes[:, 3] + box[2]*box[3] - intersection_area
 
-    IOUs = intersecton_area/union_area
+    IOUs = intersection_area/union_area
 
     return IOUs
 
 # (modified from the official implementation)
-def sparse_to_dense(sp_indices, output_shape, values, default_value=0):
+def sparse_to_dense(indices, output_shape, values, default_value=0):
     """
     build a dense matrix from sparse representations
 
     args:
-        sp_indices: a [0-2]-D array that contains the index to place values.
+        indices: list of indices. if indices[i] = [k, l], then array[k,l] should be set to values[i]
         output_shape: shape of the dense matrix
-        values: a {0,1}-D array where values corresponds to the index in each row of sp_indices
-        default_value: values to set for indices not specified in sp_indices
+        values: list of values. if indices[i] = [k, l], then array[k,l] should be set to values[i]
+        default_value: values to set for indices not specified in indices
 
     returns:
-        a dense numpy N-D array with shape output_shape
+        array: a dense numpy array with shape output_shape
     """
 
-    # TODO! understand how this works!
-
     array = np.ones(output_shape)*default_value
-    for idx, value in zip(sp_indices, values):
+    for idx, value in zip(indices, values):
         array[tuple(idx)] = value
 
     return array
