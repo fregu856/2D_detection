@@ -182,7 +182,7 @@ def load_data():
             gt_delta_values.extend(gt_delta)
             gt_bbox_values.extend(gt_bbox)
 
-    # print class_label_indices
+    #print class_label_indices
     #print mask_indices
     # print gt_bbox_indices
     # print gt_delta_values

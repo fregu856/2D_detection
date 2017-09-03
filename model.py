@@ -21,6 +21,7 @@ class SqueezeDet_model(object):
         #self.logs_dir = "/root/2D_detection/training_logs/"
 
         self.no_of_classes = 3
+        self.class_string_to_label = {"car": 0, "pedestrian": 1, "cyclist": 2}
         #self.class_weights = cPickle.load(open("data/class_weights.pkl"))
 
         self.initial_lr = 1e-5 # TODO! change this according to the paper
@@ -30,8 +31,8 @@ class SqueezeDet_model(object):
         self.img_width = 1242
         self.batch_size = 4
 
-        self.anchor_boxes = self.set_anchors() # (anchor_boxes has shape [anchors_per_img, 4])
-        self.anchors_per_img = len(self.anchor_boxes)
+        self.anchor_bboxes = self.set_anchors() # (anchor_bboxes has shape [anchors_per_img, 4])
+        self.anchors_per_img = len(self.anchor_bboxes)
         self.anchors_per_gridpoint = 9
 
         self.exp_thresh = 2 # TODO!
@@ -88,55 +89,58 @@ class SqueezeDet_model(object):
         - DOES:
         """
 
-        # TODO! possibly better names for the phs, and definitely better comments!
-
-        self.img_input_ph = tf.placeholder(tf.float32,
-                    shape=[self.batch_size, self.img_height, self.img_width, 3], # ([batch_size, img_heigth, img_width, 3])
-                    name="img_input_ph")
+        self.imgs_ph = tf.placeholder(tf.float32,
+                    shape=[self.batch_size, self.img_height, self.img_width, 3],
+                    name="imgs_ph")
 
         self.keep_prob_ph = tf.placeholder(tf.float32, name="keep_prob_ph")
 
-        # (tensor where an element is 1 if the corresponding anchor is responsible
-        # for detecting a ground truth object and 0 otherwise)
-        self.input_mask_ph = tf.placeholder(tf.float32,
+        # (mask_ph[i, j] == 1 if anchor j is assigned to (i.e., is responsible
+        # for detecting) a ground truth bbox in batch image i, 0 otherwise)
+        self.mask_ph = tf.placeholder(tf.float32,
                     shape=[self.batch_size, self.anchors_per_img, 1],
-                    name="input_mask_ph")
+                    name="mask_ph")
 
-        # (tensor used to represent anchor deltas, the 4 relative coordinates
-        # to transform each anchor into the "closest" ground truth bbox) # TODO! is this true?
-        self.bbox_delta_input_ph = tf.placeholder(tf.float32,
+        # (if anchor j is assigned to a ground truth bbox in batch image i,
+        # gt_deltas_ph[i, j] == [delta_x, delta_y, delta_w, delta_h] where the
+        # deltas transform anchor j into its assigned ground truth bbox via eq.
+        # (1) in the paper. Otherwise, gt_deltas_ph[i, j] == [0, 0, 0, 0])
+        self.gt_deltas_ph = tf.placeholder(tf.float32,
                     shape=[self.batch_size, self.anchors_per_img, 4],
-                    name="bbox_delta_input_ph")
+                    name="gt_deltas_ph")
 
-        # (tensor used to represent ground truth bbox coordinates and size) # TODO! is this true? is this the coord ans size of the closest ground truth bbox for each anchor?
-        self.bbox_input_ph = tf.placeholder(tf.float32,
+        # (if anchor j is assigned to a ground truth bbox in batch image i,
+        # gt_bboxes_ph[i, j] == [center_x, center_y, w, h] of this assigned
+        # ground truth bbox. Otherwise, gt_bboxes_ph[i, j] == [0, 0, 0, 0])
+        self.gt_bboxes_ph = tf.placeholder(tf.float32,
                     shape=[self.batch_size, self.anchors_per_img, 4],
-                    name="bbox_input_ph")
+                    name="gt_bboxes_ph")
 
-        # (tensor used to represent class labels (label of the "closest" ground
-        # truth bbox for each anchor)) # TODO! is this true?
-        self.labels_ph = tf.placeholder(tf.float32,
+        # (if anchor j is assigned to a ground truth bbox in batch image i,
+        # class_labels_ph[i, j] is the onehot encoded class label of this assigned
+        # ground truth bbox. Otherwise, class_labels_ph[i, j] is all zeros)
+        self.class_labels_ph = tf.placeholder(tf.float32,
                     shape=[self.batch_size, self.anchors_per_img, self.no_of_classes],
-                    name="labels_ph")
+                    name="class_labels_ph")
 
-    def create_feed_dict(self, img_input, keep_prob, input_mask=None,
-                         bbox_delta_input=None, bbox_input=None, labels=None):
+    def create_feed_dict(self, imgs, keep_prob, mask=None, gt_deltas=None,
+                         gt_bboxes=None, class_labels=None):
         """
         - DOES: returns a feed_dict mapping the placeholders to the actual
         input data (this is how we run the network on specific data).
         """
 
         feed_dict = {}
-        feed_dict[self.img_input_ph] = img_input
+        feed_dict[self.imgs_ph] = imgs
         feed_dict[self.keep_prob_ph] = keep_prob
-        if input_mask is not None: # (we have no input mask during inference)
-            feed_dict[self.input_mask_ph] = input_mask
-        if bbox_delta_input is not None:
-            feed_dict[self.bbox_delta_input_ph] = bbox_delta_input
-        if bbox_input is not None:
-            feed_dict[self.bbox_input_ph] = bbox_input
-        if labels is not None:
-            feed_dict[self.labels_ph] = labels
+        if mask is not None: # (we have no mask during inference)
+            feed_dict[self.mask_ph] = mask
+        if gt_deltas is not None:
+            feed_dict[self.gt_deltas_ph] = gt_deltas
+        if gt_bboxes is not None:
+            feed_dict[self.gt_bboxes_ph] = gt_bboxes
+        if class_labels is not None:
+            feed_dict[self.class_labels_ph] = class_labels
 
         return feed_dict
 
@@ -145,7 +149,7 @@ class SqueezeDet_model(object):
         - DOES:
         """
 
-        conv_1 = self.conv_layer("conv_1", self.img_input_ph, filters=64, size=3,
+        conv_1 = self.conv_layer("conv_1", self.imgs_ph, filters=64, size=3,
                     stride=2, padding="SAME", freeze=True)
         pool_1 = self.pooling_layer(conv_1, size=3, stride=2, padding="SAME")
 
@@ -207,15 +211,15 @@ class SqueezeDet_model(object):
 
         # number of ground truth objects in the batch (used to normalize bbox and
         # classification loss):
-        self.no_of_gt_objects = tf.reduce_sum(self.input_mask_ph)
+        self.no_of_gt_objects = tf.reduce_sum(self.mask_ph)
 
         # transform the anchor bboxes to predicted bboxes using the predicted bbox deltas:
         delta_x, delta_y, delta_w, delta_h = tf.unstack(self.pred_bbox_deltas, axis=2)
         # (delta_x has shape [batch_size, anchors_per_img]) # TODO! is this true!
-        anchor_x = self.anchor_boxes[:, 0]
-        anchor_y = self.anchor_boxes[:, 1]
-        anchor_w = self.anchor_boxes[:, 2]
-        anchor_h = self.anchor_boxes[:, 3]
+        anchor_x = self.anchor_bboxes[:, 0]
+        anchor_y = self.anchor_bboxes[:, 1]
+        anchor_w = self.anchor_bboxes[:, 2]
+        anchor_h = self.anchor_bboxes[:, 3]
         # # transformation according to eq. (1) in the paper:
         bbox_center_x = anchor_x + anchor_w*delta_x
         bbox_center_y = anchor_y + anchor_h*delta_y
@@ -240,9 +244,9 @@ class SqueezeDet_model(object):
 
         # compute IOU between predicted and ground truth bboxes:
         pred_bboxes = bbox_transform(tf.unstack(self.pred_bboxes, axis=2))
-        gt_bboxes = bbox_transform(tf.unstack(self.bbox_input_ph, axis=2))
+        gt_bboxes = bbox_transform(tf.unstack(self.gt_bboxes_ph, axis=2))
         IOU = self.tensor_IOU(pred_bboxes, gt_bboxes)
-        mask = tf.reshape(self.input_mask_ph, [self.batch_size, self.anchors_per_img])
+        mask = tf.reshape(self.mask_ph, [self.batch_size, self.anchors_per_img])
         masked_IOU = IOU*mask
         self.IOUs = self.IOUs.assign(masked_IOU)
 
@@ -262,9 +266,9 @@ class SqueezeDet_model(object):
         # class cross-entropy:
         # (cross-entropy: q * -log(p) + (1-q) * -log(1-p)) # TODO! is this the normal def? What is the advantage?
         # (add a small value into log to prevent blowing up)
-        class_loss = (self.labels_ph*(-tf.log(self.pred_class_probs + self.epsilon)) +
-                    (1 - self.labels_ph)*(-tf.log(1 - self.pred_class_probs + self.epsilon)))
-        class_loss = self.loss_coeff_class*self.input_mask_ph*class_loss
+        class_loss = (self.class_labels_ph*(-tf.log(self.pred_class_probs + self.epsilon)) +
+                    (1 - self.class_labels_ph)*(-tf.log(1 - self.pred_class_probs + self.epsilon)))
+        class_loss = self.loss_coeff_class*self.mask_ph*class_loss
         class_loss = tf.reduce_sum(class_loss)
         class_loss = tf.truediv(class_loss, self.no_of_gt_objects) # (tf.truediv is used to ensure that we get no integer divison # TODO! true?)
         self.class_loss = class_loss
@@ -272,7 +276,7 @@ class SqueezeDet_model(object):
 
         # confidence score regression: # TODO! don't understand how this loss matches the one in the paper! Now I actually understand, this works because self.IOUs is masked as well.
         # TODO! why do we do mean here, i.e. compute loss per img, but not in the other losses? Doesn't the normalization by no_of_gt_objects take care of that? But shouldn't that be per img in that case?
-        input_mask = tf.reshape(self.input_mask_ph, [self.batch_size, self.anchors_per_img])
+        input_mask = tf.reshape(self.mask_ph, [self.batch_size, self.anchors_per_img])
         conf_loss_per_img = (tf.square(self.IOUs - self.pred_conf_scores)*
                     (input_mask*self.loss_coeff_conf_pos/self.no_of_gt_objects +
                     (1 - input_mask)*self.loss_coeff_conf_neg/(self.anchors_per_img - self.no_of_gt_objects))) # TODO! self.anchors_per_img*self.batch_size instead of just self.anchors_per_img?
@@ -282,7 +286,7 @@ class SqueezeDet_model(object):
         tf.add_to_collection("losses", self.conf_loss)
 
         # bbox regression:
-        bbox_loss = self.input_mask_ph*(self.pred_bbox_deltas - self.bbox_delta_input_ph)
+        bbox_loss = self.input_mask_ph*(self.pred_bbox_deltas - self.gt_deltas_ph)
         bbox_loss = self.loss_coeff_bbox*tf.square(bbox_loss)
         bbox_loss = tf.reduce_sum(bbox_loss)
         bbox_loss = tf.truediv(bbox_loss, self.no_of_gt_objects)
