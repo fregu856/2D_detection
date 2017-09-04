@@ -74,7 +74,7 @@ for step, (img_path, label_path) in enumerate(train_data):
     augmented_train_img_paths.append(img_path)
 
     label_flipped_path = label_path.split(".txt")[0] + "_flipped.txt"
-    label_flipped_file = open(label_flipped_path, "a")
+    label_flipped_file = open(label_flipped_path, "w")
     with open(label_path) as label_file:
         for line in label_file:
             splitted_line = line.split(" ")

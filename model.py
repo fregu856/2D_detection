@@ -47,6 +47,8 @@ class SqueezeDet_model(object):
         self.prob_thresh = 0.005
         self.nms_thresh = 0.4
 
+        self.plot_prob_thresh = 0.4 # TODO! should be 0.4
+
         self.loss_coeff_class = 1.0
         self.loss_coeff_conf_pos = 75.0
         self.loss_coeff_conf_neg = 100.0
@@ -83,9 +85,11 @@ class SqueezeDet_model(object):
 
         self.model_dir = self.logs_dir + "model_%s" % self.model_id + "/"
         self.checkpoints_dir = self.model_dir + "checkpoints/"
+        self.debug_imgs_dir = self.model_dir + "imgs/"
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
             os.makedirs(self.checkpoints_dir)
+            os.makedirs(self.debug_imgs_dir)
 
     def add_placeholders(self):
         """
@@ -467,7 +471,7 @@ class SqueezeDet_model(object):
             # boxes and class_inds:
             # # (order[0] is the index of the largest value in probs, order[1] the
             # # index of the second largest value etc. order has length top_N_detections)
-            order = probs.argsort()[:-mc.TOP_N_DETECTION-1:-1]
+            order = probs.argsort()[:-self.top_N_detections-1:-1]
             probs = probs[order]
             boxes = boxes[order]
             class_inds = class_inds[order]
