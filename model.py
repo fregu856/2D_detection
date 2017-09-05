@@ -35,7 +35,7 @@ class SqueezeDet_model(object):
 
         self.img_height = 375
         self.img_width = 1242
-        self.batch_size = 4
+        self.batch_size = 4 # TODO! should be 20!
 
         self.anchor_bboxes = self.set_anchors() # (anchor_bboxes has shape [anchors_per_img, 4])
         self.anchors_per_img = len(self.anchor_bboxes)
@@ -191,11 +191,6 @@ class SqueezeDet_model(object):
 
         preds = self.preds
 
-        # (IOU between predicted and ground truth bboxes) # TODO! why do I need to initialize this in this weird way?
-        self.IOUs = tf.Variable(
-                    initial_value=np.zeros((self.batch_size, self.anchors_per_img)),
-                    trainable=False, name="IOUs", dtype=tf.float32)
-
         # class probabilities:
         no_of_class_probs = self.anchors_per_gridpoint*self.no_of_classes # (K*C) (total no of class probs per grid point)
         pred_class_logits = preds[:, :, :, :no_of_class_probs]
@@ -258,7 +253,7 @@ class SqueezeDet_model(object):
         IOU = self.tensor_IOU(pred_bboxes, gt_bboxes)
         mask = tf.reshape(self.mask_ph, [self.batch_size, self.anchors_per_img])
         masked_IOU = IOU*mask
-        self.IOUs = self.IOUs.assign(masked_IOU)
+        self.IOUs = masked_IOU
 
         # (Pr(class | object)*Pr(object) = Pr(class))
         probs = self.pred_class_probs*tf.reshape(self.pred_conf_scores,

@@ -159,7 +159,6 @@ for label_path in val_label_paths:
             bboxes.append([c_x, c_y, w, h, bbox_class])
 
     val_bboxes_per_img.append(bboxes)
-
 cPickle.dump(val_bboxes_per_img,
             open(project_dir + "data/val_bboxes_per_img.pkl", "w"))
 
