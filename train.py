@@ -52,14 +52,14 @@ def evaluate_on_val():
     - DOES:
     """
 
+    print "evaluation on val:"
+
     random.shuffle(val_data)
     val_img_paths, val_bboxes_per_img = zip(*val_data)
 
     val_batch_losses = []
     batch_pointer = 0
     for step in range(no_of_val_batches):
-        print step
-
         batch_imgs = np.zeros((batch_size, img_height, img_width, 3), dtype=np.float32)
 
         # (list of length batch_size, each element is a list of length
@@ -204,7 +204,7 @@ def evaluate_on_val():
         batch_loss, pred_bboxes, detection_classes, detection_probs  = sess.run([model.loss, model.pred_bboxes, model.detection_classes, model.detection_probs],
                     feed_dict=batch_feed_dict)
         val_batch_losses.append(batch_loss)
-        print batch_loss
+        print "epoch: %d/%d, val step: %d/%d, val batch loss: %g" % (epoch+1, no_of_epochs, step+1, no_of_val_batches, batch_loss)
 
 
 
@@ -231,7 +231,7 @@ def evaluate_on_val():
             img_idx = idx[0]
             if img_idx == 0:
                 pred_bbox = pred_bboxes[tuple(idx)]
-                gt_bbox = gt_bboxes[tuple(idx)]
+                gt_bbox = batch_gt_bboxes[tuple(idx)]
                 filtered_pred_bboxes.append(pred_bbox)
                 filtered_gt_bboxes.append(gt_bbox)
 
@@ -242,9 +242,6 @@ def evaluate_on_val():
 
                 pred_prob = detection_probs[tuple(idx)]
                 filtered_pred_probs.append(pred_prob)
-
-        print filtered_gt_bboxes
-        print filtered_pred_bboxes
 
         # draw ground truth bboxes on the first batch image and save to disk:
         gt_img = draw_bboxes(batch_imgs[0].copy(), filtered_gt_bboxes, filtered_gt_classes)
@@ -275,7 +272,7 @@ def train_data_iterator():
     train_img_paths, train_bboxes_per_img = zip(*train_data)
 
     batch_pointer = 0
-    for step in range(2):
+    for step in range(no_of_batches):
         batch_imgs = np.zeros((batch_size, img_height, img_width, 3), dtype=np.float32)
 
         # (list of length batch_size, each element is a list of length
@@ -464,10 +461,10 @@ with tf.Session() as sess:
             batch_losses_conf.append(batch_loss_conf)
             batch_losses_bbox.append(batch_loss_bbox)
 
-            print "step: %d/%d, training batch loss: %g" % (step+1, no_of_batches, batch_loss)
-            print "step: %d/%d, class batch loss: %g" % (step+1, no_of_batches, batch_loss_class)
-            print "step: %d/%d, conf batch loss: %g" % (step+1, no_of_batches, batch_loss_conf)
-            print "step: %d/%d, bbox batch loss: %g" % (step+1, no_of_batches, batch_loss_bbox)
+            print "epoch: %d/%d, step: %d/%d, training batch loss: %g" % (epoch+1, no_of_epochs, step+1, no_of_batches, batch_loss)
+            print "                           class batch loss: %g" % batch_loss_class
+            print "                           conf batch loss: %g" % batch_loss_conf
+            print "                           bbox batch loss: %g" % batch_loss_bbox
 
         # compute the train epoch loss:
         train_epoch_loss = np.mean(batch_losses)
