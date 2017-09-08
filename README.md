@@ -72,6 +72,4 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 
 
 
-sudo ln -s libhdf5_serial_hl.so.10.0.2 libhdf5.so
-
 
