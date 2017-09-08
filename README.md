@@ -35,6 +35,7 @@ Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) ba
 - - $ sudo docker pull tensorflow/tensorflow:latest-gpu
 
 - Create start_docker_image.sh containing:
+'''
 #!/bin/bash
 
 # DEFAULT VALUES
@@ -47,6 +48,7 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
         --name "$NAME""$GPUIDS" \
         -v /home/fregu856:/root/ \
         tensorflow/tensorflow:latest-gpu bash
+'''
 
 
 
