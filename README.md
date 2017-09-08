@@ -65,7 +65,7 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - - $ apt-get install nano
 - - $ apt-get install sudo
 - - $ apt-get install wget
-- - $ sudo apt-get install libopencv-dev python-opencv)
+- - $ sudo apt-get install libopencv-dev python-opencv
 
 
 
