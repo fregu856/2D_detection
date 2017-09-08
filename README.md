@@ -50,6 +50,15 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
         tensorflow/tensorflow:latest-gpu bash
 ```
 
+- /root/ will now be mapped to /home/fregu856 (i.e., $ cd -- takes you to the regular home folder). 
+
+- To start the image:
+- - $ sudo sh start_docker_image.sh 
+- To commit changes to the image:
+- - Open a new terminal window.
+- $ sudo docker commit fregu856_GPU0 tensorflow/tensorflow:latest-gpu
+- To stop the image when it’s running:
+- - $ sudo docker stop fregu856_GPU0
 
 
 
