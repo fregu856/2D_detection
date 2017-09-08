@@ -2,7 +2,7 @@
 
 Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) based on the official implementation (https://github.com/BichenWuUCB/squeezeDet), trained on the KITTI dataset (http://www.cvlibs.net/datasets/kitti/).
 
-- The pretrained SqueezeNet is squeezenet_v1.0.caffemodel and deploy.prototxt from https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.0. Save these files to 2D_detection/data. To load these weights into Tensorflow, one need to have pycaffe installed (must be able to run "import caffe").
+- The pretrained SqueezeNet is squeezenet_v1.0.caffemodel and deploy.prototxt from https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.0. Save these files to 2D_detection/data. To load these weights into Tensorflow, one need to have pycaffe installed (must be able to run "import caffe"). Run get_caffemodel_weights in utilities.py and save the output as caffemodel_weights.pkl in /data using cPickle.
 
 
 
@@ -69,5 +69,9 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - Commit changes to the image (otherwise, the installed packages will be removed at exit!).
 
 
+
+
+
+sudo ln -s libhdf5_serial_hl.so.10.0.2 libhdf5.so
 
 
