@@ -18,7 +18,12 @@ Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) ba
 - - $ sudo apt-get install -y docker-ce
 
 - Install CUDA drivers (I used NC6, Tesla K80, see "Install CUDA drivers for NC VMs" in https://docs.microsoft.com/en-us/azure/virtual-machines/linux/n-series-driver-setup):
-- - $
+- - $ CUDA_REPO_PKG=cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
+- - $ wget -O /tmp/${CUDA_REPO_PKG} http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_REPO_PKG} 
+- - $ sudo dpkg -i /tmp/${CUDA_REPO_PKG}
+- - $ rm -f /tmp/${CUDA_REPO_PKG}
+- - $ sudo apt-get update
+- - $ sudo apt-get install cuda-drivers
 
 - Install nvidia-docker:
 - - $ wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
