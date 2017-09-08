@@ -17,17 +17,37 @@ Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) ba
 - - $ sudo apt-get update
 - - $ sudo apt-get install -y docker-ce
 
-- Install CUDA drivers (I used NC6, Tesla K80, see "Install CUDA drivers for NC VMs" in https://docs.microsoft.com/en-us/azure/virtual-machines/linux/n-series-driver-setup):
+- Install CUDA drivers (I used NC6 on Azure, Tesla K80, see "Install CUDA drivers for NC VMs" in https://docs.microsoft.com/en-us/azure/virtual-machines/linux/n-series-driver-setup):
 - - $ CUDA_REPO_PKG=cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
 - - $ wget -O /tmp/${CUDA_REPO_PKG} http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/${CUDA_REPO_PKG} 
 - - $ sudo dpkg -i /tmp/${CUDA_REPO_PKG}
 - - $ rm -f /tmp/${CUDA_REPO_PKG}
 - - $ sudo apt-get update
 - - $ sudo apt-get install cuda-drivers
+- - Reboot the VM.
 
 - Install nvidia-docker:
 - - $ wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
 - - $ sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
 - - $ sudo nvidia-docker run --rm nvidia/cuda nvidia-smi
+
+- Download latest tensorflow docker image with GPU support (tensorflow 1.3) :
+- - $ sudo docker pull tensorflow/tensorflow:latest-gpu
+
+- Create start_docker_image.sh containing:
+#!/bin/bash
+
+# DEFAULT VALUES
+GPUIDS="0"
+NAME="fregu856_GPU"
+
+
+NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
+        -p 5584:5584 \
+        --name "$NAME""$GPUIDS" \
+        -v /home/fregu856:/root/ \
+        tensorflow/tensorflow:latest-gpu bash
+
+
 
 
