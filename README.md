@@ -50,6 +50,8 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
         tensorflow/tensorflow:latest-gpu bash
 '''
 
+gg
+
 
 
 
