@@ -59,6 +59,10 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - - $ sudo docker commit fregu856_GPU0 tensorflow/tensorflow:latest-gpu
 - To stop the image when it’s running:
 - - $ sudo docker stop fregu856_GPU0
+- To exit the image without killing running code:
+- - Ctrl-P + Q
+- To get back into a running image:
+- - $ sudo docker attach fregu856_GPU0
 
 - Intall needed software (inside the docker image):
 - - $ apt-get update
