@@ -60,5 +60,13 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - To stop the image when it’s running:
 - - $ sudo docker stop fregu856_GPU0
 
+- Intall needed software (inside the docker image):
+- - $ apt-get update
+- - $ apt-get install nano
+- - $ apt-get install sudo
+- - $ apt-get install wget
+- - $ sudo apt-get install libopencv-dev python-opencv)
+
+
 
 
