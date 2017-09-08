@@ -8,11 +8,12 @@ from utilities import bbox_transform_inv
 
 # TODO! comment this entire file properly!
 
-project_dir = "/home/fregu856/2D_detection/"
-KITTI_dir = "/home/fregu856/data/KITTI/"
+#project_dir = "/home/fregu856/2D_detection/"
+#KITTI_dir = "/home/fregu856/data/KITTI/"
 
-# project_dir = "/root/2D_detection"
-# cityscapes_dir = "/root/KITTI/"
+project_dir = "/root/2D_detection/"
+KITTI_dir = "/root/data/KITTI/"
+#KITTI_dir = "/root/data/KITTI_debug/"
 
 new_img_height = 375
 new_img_width = 1242
@@ -27,19 +28,23 @@ orig_train_label_paths = []
 
 orig_train_img_names = os.listdir(orig_train_imgs_dir)
 for step, img_name in enumerate(orig_train_img_names):
-    print step
+    if step % 100 == 0:
+        print step
 
-    img_id = img_name.split(".png")[0]
-    label_path = orig_train_labels_dir + img_id + ".txt"
-    orig_train_label_paths.append(label_path)
+    if "flipped" not in img_name:
+        img_id = img_name.split(".png")[0]
 
-    img_path = orig_train_imgs_dir + img_name
-    img = cv2.imread(img_path, -1)
+        label_path = orig_train_labels_dir + img_id + ".txt"
+        orig_train_label_paths.append(label_path)
 
-    img_rescaled = cv2.resize(img, (new_img_width, new_img_height))
-    img_rescaled_path = project_dir + "data/" + img_id + "_rescaled.png"
-    cv2.imwrite(img_rescaled_path, img_rescaled)
-    orig_train_img_paths.append(img_rescaled_path)
+        img_path = orig_train_imgs_dir + img_name
+        orig_train_img_paths.append(img_path)
+        #img = cv2.imread(img_path, -1)
+
+        # img_rescaled = cv2.resize(img, (new_img_width, new_img_height))
+        # img_rescaled_path = project_dir + "data/" + img_id + "_rescaled.png"
+        # cv2.imwrite(img_rescaled_path, img_rescaled)
+        #orig_train_img_paths.append(img_rescaled_path)
 
 orig_train_data = zip(orig_train_img_paths, orig_train_label_paths)
 random.shuffle(orig_train_data)
@@ -50,6 +55,9 @@ random.shuffle(orig_train_data)
 no_of_imgs = len(orig_train_img_paths)
 train_data = orig_train_data[:int(no_of_imgs*0.8)]
 val_data = orig_train_data[-int(no_of_imgs*0.2):]
+
+print len(val_data)
+print len(train_data)
 
 val_img_paths, val_label_paths = zip(*val_data)
 cPickle.dump(val_label_paths,
@@ -63,17 +71,20 @@ cPickle.dump(val_img_paths,
 augmented_train_img_paths = []
 augmented_train_label_paths = []
 for step, (img_path, label_path) in enumerate(train_data):
-    print step
+    if step % 100 == 0:
+        print step
 
     img = cv2.imread(img_path, -1)
 
     img_flipped = cv2.flip(img, 1)
     img_flipped_path = img_path.split(".png")[0] + "_flipped.png"
+    img_flipped_path = project_dir + "data/" + img_flipped_path.split("/image_2/")[1]
     cv2.imwrite(img_flipped_path, img_flipped)
     augmented_train_img_paths.append(img_flipped_path)
     augmented_train_img_paths.append(img_path)
 
     label_flipped_path = label_path.split(".txt")[0] + "_flipped.txt"
+    label_flipped_path = project_dir + "data/" + label_flipped_path.split("/label_2/")[1]
     label_flipped_file = open(label_flipped_path, "w")
     with open(label_path) as label_file:
         for line in label_file:
@@ -105,6 +116,7 @@ random.shuffle(augmented_train_data)
 
 train_data = augmented_train_data
 train_img_paths, train_label_paths = zip(*train_data)
+no_of_train_imgs = len(train_img_paths)
 cPickle.dump(train_label_paths,
             open(project_dir + "data/train_label_paths.pkl", "w"))
 cPickle.dump(train_img_paths,
@@ -112,12 +124,36 @@ cPickle.dump(train_img_paths,
 # train_label_paths = cPickle.load(open(project_dir + "data/train_label_paths.pkl"))
 # train_img_paths = cPickle.load(open(project_dir + "data/train_img_paths.pkl"))
 
+print len(train_data)
+
+
+
+no_of_train_imgs = len(train_img_paths)
+mean_channels = np.zeros((3, ))
+for step, img_path in enumerate(train_img_paths):
+    if step % 100 == 0:
+        print step
+
+    img = cv2.imread(img_path, -1)
+
+    img_mean_channels = np.mean(img, axis=0)
+    img_mean_channels = np.mean(img_mean_channels, axis=0)
+
+    mean_channels += img_mean_channels
+
+mean_channels = mean_channels/float(no_of_train_imgs)
+
+cPickle.dump(mean_channels, open(project_dir + "data/mean_channels.pkl", "w"))
+
 
 
 
 
 train_bboxes_per_img = []
-for label_path in train_label_paths:
+for step, label_path in enumerate(train_label_paths):
+    if step % 100 == 0:
+        print step
+
     bboxes = []
 
     with open(label_path) as label_file:
@@ -140,7 +176,10 @@ cPickle.dump(train_bboxes_per_img,
             open(project_dir + "data/train_bboxes_per_img.pkl", "w"))
 
 val_bboxes_per_img = []
-for label_path in val_label_paths:
+for step, label_path in enumerate(val_label_paths):
+    if step % 100 == 0:
+        print step
+
     bboxes = []
 
     with open(label_path) as label_file:

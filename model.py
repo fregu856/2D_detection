@@ -20,8 +20,8 @@ class SqueezeDet_model(object):
 
         self.model_id = model_id
 
-        self.project_dir = "/home/fregu856/2D_detection/"
-        #self.project_dir = "/root/2D_detection/"
+        #self.project_dir = "/home/fregu856/2D_detection/"
+        self.project_dir = "/root/2D_detection/"
 
         self.logs_dir =  self.project_dir + "training_logs/"
 
@@ -35,7 +35,7 @@ class SqueezeDet_model(object):
 
         self.img_height = 375
         self.img_width = 1242
-        self.batch_size = 4 # TODO! should be 20!
+        self.batch_size = 32
 
         self.anchor_bboxes = self.set_anchors() # (anchor_bboxes has shape [anchors_per_img, 4])
         self.anchors_per_img = len(self.anchor_bboxes)
@@ -47,7 +47,7 @@ class SqueezeDet_model(object):
         self.prob_thresh = 0.005
         self.nms_thresh = 0.4
 
-        self.plot_prob_thresh = 0.4 # TODO! should be 0.4
+        self.plot_prob_thresh = 0.4
 
         self.loss_coeff_class = 1.0
         self.loss_coeff_conf_pos = 75.0
@@ -58,10 +58,8 @@ class SqueezeDet_model(object):
         self.max_grad_norm = 1.0
 
         self.load_pretrained_model = True
-
-        prototxt_path = self.project_dir + "data/deploy.prototxt"
-        caffemodel_path = self.project_dir + "data/squeezenet_v1.0.caffemodel"
-        self.caffemodel_weights = get_caffemodel_weights(prototxt_path, caffemodel_path)
+        if self.load_pretrained_model:
+            self.caffemodel_weights = cPickle.load(open("data/caffemodel_weights.pkl"))
 
         self.weight_decay = 0.0001
 

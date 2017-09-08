@@ -12,8 +12,8 @@ from model import SqueezeDet_model
 
 from utilities import sparse_to_dense, batch_IOU, draw_bboxes
 
-project_dir = "/home/fregu856/2D_detection/"
-#project_dir = "/root/2D_segmentation/"
+#project_dir = "/home/fregu856/2D_detection/"
+project_dir = "/root/2D_detection/"
 
 data_dir = project_dir + "data/"
 
@@ -26,7 +26,7 @@ img_height = model.img_height
 img_width = model.img_width
 no_of_classes = model.no_of_classes
 
-#train_mean_img = cPickle.load(open("data/mean_img.pkl"))
+train_mean_channels = cPickle.load(open("data/mean_channels.pkl"))
 
 # load the training data from disk
 train_img_paths = cPickle.load(open(data_dir + "train_img_paths.pkl"))
@@ -86,7 +86,8 @@ def evaluate_on_val():
             # read the next img:
             img_path = val_img_paths[batch_pointer + i]
             img = cv2.imread(img_path, -1)
-            #img = img - train_mean_img
+            img = cv2.resize(img, (img_width, img_height))
+            img = img - train_mean_channels
             batch_imgs[i] = img
 
             img_bboxes = val_bboxes_per_img[batch_pointer + i]
@@ -207,54 +208,54 @@ def evaluate_on_val():
         print "epoch: %d/%d, val step: %d/%d, val batch loss: %g" % (epoch+1, no_of_epochs, step+1, no_of_val_batches, batch_loss)
 
 
+        if step < 5:
+            final_bboxes, final_probs, final_classes = model.filter_prediction(pred_bboxes[0], detection_probs[0], detection_classes[0])
 
-        final_bboxes, final_probs, final_classes = model.filter_prediction(pred_bboxes[0], detection_probs[0], detection_classes[0])
+            keep_idx = [idx for idx in range(len(final_probs)) if final_probs[idx] > model.plot_prob_thresh]
+            final_bboxes = [final_bboxes[idx] for idx in keep_idx]
+            final_probs = [final_probs[idx] for idx in keep_idx]
+            final_classes = [final_classes[idx] for idx in keep_idx]
 
-        keep_idx = [idx for idx in range(len(final_probs)) if final_probs[idx] > model.plot_prob_thresh]
-        final_bboxes = [final_bboxes[idx] for idx in keep_idx]
-        final_probs = [final_probs[idx] for idx in keep_idx]
-        final_classes = [final_classes[idx] for idx in keep_idx]
-
-        # draw the bboxes that the model would've output in inference:
-        pred_img = draw_bboxes(batch_imgs[0].copy(), final_bboxes, final_classes)
-        pred_img = cv2.resize(pred_img, (int(0.4*img_width), int(0.4*img_height)))
-        pred_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred.png"
-        cv2.imwrite(pred_path, pred_img)
+            # draw the bboxes that the model would've output in inference:
+            pred_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, final_bboxes, final_classes)
+            pred_img = cv2.resize(pred_img, (int(0.4*img_width), int(0.4*img_height)))
+            pred_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred.png"
+            cv2.imwrite(pred_path, pred_img)
 
 
-        filtered_pred_bboxes = [] # bboxes corr to the first batch img
-        filtered_gt_bboxes = [] # bboxes corr to the first batch img
-        filtered_pred_classes = []
-        filtered_gt_classes = []
-        filtered_pred_probs = []
-        for idx, class_label_idx in zip(mask_indices, class_label_indices):
-            img_idx = idx[0]
-            if img_idx == 0:
-                pred_bbox = pred_bboxes[tuple(idx)]
-                gt_bbox = batch_gt_bboxes[tuple(idx)]
-                filtered_pred_bboxes.append(pred_bbox)
-                filtered_gt_bboxes.append(gt_bbox)
+            filtered_pred_bboxes = [] # bboxes corr to the first batch img
+            filtered_gt_bboxes = [] # bboxes corr to the first batch img
+            filtered_pred_classes = []
+            filtered_gt_classes = []
+            filtered_pred_probs = []
+            for idx, class_label_idx in zip(mask_indices, class_label_indices):
+                img_idx = idx[0]
+                if img_idx == 0:
+                    pred_bbox = pred_bboxes[tuple(idx)]
+                    gt_bbox = batch_gt_bboxes[tuple(idx)]
+                    filtered_pred_bboxes.append(pred_bbox)
+                    filtered_gt_bboxes.append(gt_bbox)
 
-                pred_class = detection_classes[tuple(idx)]
-                gt_class = class_label_idx[2]
-                filtered_pred_classes.append(pred_class)
-                filtered_gt_classes.append(gt_class)
+                    pred_class = detection_classes[tuple(idx)]
+                    gt_class = class_label_idx[2]
+                    filtered_pred_classes.append(pred_class)
+                    filtered_gt_classes.append(gt_class)
 
-                pred_prob = detection_probs[tuple(idx)]
-                filtered_pred_probs.append(pred_prob)
+                    pred_prob = detection_probs[tuple(idx)]
+                    filtered_pred_probs.append(pred_prob)
 
-        # draw ground truth bboxes on the first batch image and save to disk:
-        gt_img = draw_bboxes(batch_imgs[0].copy(), filtered_gt_bboxes, filtered_gt_classes)
-        gt_img = cv2.resize(gt_img, (int(0.4*img_width), int(0.4*img_height)))
-        gt_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_gt.png"
-        cv2.imwrite(gt_path, gt_img)
+            # draw ground truth bboxes on the first batch image and save to disk:
+            gt_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, filtered_gt_bboxes, filtered_gt_classes)
+            gt_img = cv2.resize(gt_img, (int(0.4*img_width), int(0.4*img_height)))
+            gt_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_gt.png"
+            cv2.imwrite(gt_path, gt_img)
 
-        # draw the outputed bboxes that are assigned to a ground truth bboxes
-        # on the first batch image and save to disk: (so that one can compare the gt bboxes and what the model outputs for the asigned anchors, i.e. for the anchors that should match perfectly)
-        pred_assigned_img = draw_bboxes(batch_imgs[0].copy(), filtered_pred_bboxes, filtered_pred_classes)
-        pred_assigned_img = cv2.resize(pred_assigned_img, (int(0.4*img_width), int(0.4*img_height)))
-        pred_assigned_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred_assigned.png"
-        cv2.imwrite(pred_assigned_path, pred_assigned_img)
+            # draw the outputed bboxes that are assigned to a ground truth bboxes
+            # on the first batch image and save to disk: (so that one can compare the gt bboxes and what the model outputs for the asigned anchors, i.e. for the anchors that should match perfectly)
+            pred_assigned_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, filtered_pred_bboxes, filtered_pred_classes)
+            pred_assigned_img = cv2.resize(pred_assigned_img, (int(0.4*img_width), int(0.4*img_height)))
+            pred_assigned_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred_assigned.png"
+            cv2.imwrite(pred_assigned_path, pred_assigned_img)
 
 
 
@@ -299,7 +300,8 @@ def train_data_iterator():
             # read the next img:
             img_path = train_img_paths[batch_pointer + i]
             img = cv2.imread(img_path, -1)
-            #img = img - train_mean_img
+            img = cv2.resize(img, (img_width, img_height))
+            img = img - train_mean_channels
             batch_imgs[i] = img
 
             img_bboxes = train_bboxes_per_img[batch_pointer + i]
