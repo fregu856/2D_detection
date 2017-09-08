@@ -12,4 +12,8 @@ Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) ba
 - Download KITTI (data_object_image_2.zip and data_object_label_2.zip).
 
 - Install docker-ce:
--- Test
+- - $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+- - $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+- - $ sudo apt-get update
+- - $ sudo apt-get install -y docker-ce
+
