@@ -9,7 +9,7 @@ from utilities import bbox_transform_inv
 # TODO! comment this entire file properly!
 
 #project_dir = "/home/fregu856/2D_detection/"
-#data_dir = "/home/fregu856/data/""
+#data_dir = "/home/fregu856/data/"
 
 project_dir = "/root/2D_detection/"
 data_dir = "/root/data/"
@@ -207,6 +207,11 @@ no_of_classes = 3
 
 
 
+
+
+
+
+
 # test_imgs_dir = KITTI_dir + "/data_object/testing/image_2/"
 #
 # test_img_paths = []
@@ -222,6 +227,11 @@ no_of_classes = 3
 #
 # cPickle.dump(test_img_paths,
 #             open(project_dir + "data/test_img_paths.pkl", "w"))
+
+
+
+
+
 
 
 
@@ -254,17 +264,72 @@ no_of_classes = 3
 
 
 
-KITTI_seq_frame_paths = []
-frame_names = os.listdir(data_dir + "KITTI_sequence/")
+
+
+
+# KITTI_seq_test_0_frame_paths = []
+# KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0000/"
+# frame_names = os.listdir(KITTI_seq_dir)
+# for step, frame_name in enumerate(frame_names):
+#     if step % 100 == 0:
+#         print step
+#
+#     frame_path = KITTI_dir + "data_tracking/testing/image_02/0000/" + frame_name
+#     KITTI_seq_test_0_frame_paths.append(frame_path)
+#
+# cPickle.dump(KITTI_seq_test_0_frame_paths,
+#             open(project_dir + "data/KITTI_seq_test_0_frame_paths.pkl", "w"))
+
+# KITTI_seq_test_1_frame_paths = []
+# KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0001/"
+# frame_names = os.listdir(KITTI_seq_dir)
+# for step, frame_name in enumerate(frame_names):
+#     if step % 100 == 0:
+#         print step
+#
+#     frame_path = KITTI_dir + "data_tracking/testing/image_02/0001/" + frame_name
+#     KITTI_seq_test_1_frame_paths.append(frame_path)
+#
+# cPickle.dump(KITTI_seq_test_1_frame_paths,
+#             open(project_dir + "data/KITTI_seq_test_1_frame_paths.pkl", "w"))
+
+# KITTI_seq_test_4_frame_paths = []
+# KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0004/"
+# frame_names = os.listdir(KITTI_seq_dir)
+# for step, frame_name in enumerate(frame_names):
+#     if step % 100 == 0:
+#         print step
+#
+#     frame_path = KITTI_dir + "data_tracking/testing/image_02/0004/" + frame_name
+#     KITTI_seq_test_4_frame_paths.append(frame_path)
+#
+# cPickle.dump(KITTI_seq_test_4_frame_paths,
+#             open(project_dir + "data/KITTI_seq_test_4_frame_paths.pkl", "w"))
+
+
+
+
+
+
+Cityscapes_dir = data_dir + "cityscapes/"
+
+Cityscapes_seq_0_frame_paths = []
+Cityscapes_seq_dir = Cityscapes_dir + "leftImg8bit/demoVideo/stuttgart_00/"
+frame_names = os.listdir(Cityscapes_seq_dir)
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
         print step
 
-    frame_path = data_dir + "KITTI_sequence/" + frame_name
-    KITTI_seq_frame_paths.append(frame_path)
+    frame_path = Cityscapes_dir + "leftImg8bit/demoVideo/stuttgart_00/" + frame_name
+    Cityscapes_seq_0_frame_paths.append(frame_path)
 
-cPickle.dump(KITTI_seq_frame_paths,
-            open(project_dir + "data/KITTI_seq_frame_paths.pkl", "w"))
+cPickle.dump(Cityscapes_seq_0_frame_paths,
+            open(project_dir + "data/Cityscapes_seq_0_frame_paths.pkl", "w"))
+
+
+
+
+
 
 
 

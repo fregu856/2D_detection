@@ -46,7 +46,7 @@ class SqueezeDet_model(object):
         self.prob_thresh = 0.005
         self.nms_thresh = 0.4
 
-        self.plot_prob_thresh = 0.4
+        self.plot_prob_thresh = 0.7
 
         self.loss_coeff_class = 1.0
         self.loss_coeff_conf_pos = 75.0

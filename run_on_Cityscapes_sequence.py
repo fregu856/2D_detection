@@ -60,8 +60,8 @@ with tf.Session() as sess:
             img_paths.append(img_path)
             img = cv2.imread(img_path, -1)
 
-            img = cv2.resize(img, (img_width, int(img_height*(float(img_width)/float(2048)))))
-            img = img[img_height:]
+            img = cv2.resize(img, (img_width, int(1024*(float(img_width)/float(2048)))))
+            img = img[310-img_height/2:310+img_height/2, :]
 
             img = cv2.resize(img, (img_width, img_height))
             img = img - train_mean_channels
@@ -91,7 +91,7 @@ with tf.Session() as sess:
             cv2.imwrite(pred_path, pred_img)
 
 fourcc = cv2.cv.CV_FOURCC("M", "J", "P", "G")
-out = cv2.VideoWriter(results_dir + "Cityscapes_seq_0_pred.avi", fourcc, 10.0, (img_width, img_height))
+out = cv2.VideoWriter(results_dir + "Cityscapes_seq_0_pred.avi", fourcc, 15.0, (img_width, img_height))
 
 frame_names = sorted(os.listdir(results_dir))
 for step, frame_name in enumerate(frame_names):
