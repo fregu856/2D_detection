@@ -18,7 +18,7 @@ project_dir = "/root/2D_detection/"
 
 data_dir = project_dir + "data/"
 
-model_id = "KITTI_seq_run"
+model_id = "Cityscapes_seq_run"
 
 model = SqueezeDet_model(model_id)
 
@@ -30,13 +30,13 @@ no_of_classes = model.no_of_classes
 train_mean_channels = cPickle.load(open("data/mean_channels.pkl"))
 
 # load the test data from disk
-frame_paths = cPickle.load(open(data_dir + "KITTI_seq_test_0_frame_paths.pkl"))
+frame_paths = cPickle.load(open(data_dir + "Cityscapes_seq_0_frame_paths.pkl"))
 
 # compute the number of batches needed to iterate through the data:
 no_of_frames = len(frame_paths)
 no_of_batches = int(no_of_frames/batch_size)
 
-results_dir = model.project_dir + "results_on_KITTI_seq/"
+results_dir = model.project_dir + "results_on_Cityscapes_seq/"
 
 # create a saver for saving all model variables/parameters:
 saver = tf.train.Saver(write_version=tf.train.SaverDef.V2)
@@ -59,6 +59,10 @@ with tf.Session() as sess:
             img_path = frame_paths[batch_pointer + i]
             img_paths.append(img_path)
             img = cv2.imread(img_path, -1)
+
+            img = cv2.resize(img, (img_width, int(img_height*(float(img_width)/float(2048)))))
+            img = img[img_height:]
+
             img = cv2.resize(img, (img_width, img_height))
             img = img - train_mean_channels
             batch_imgs[i] = img
@@ -87,7 +91,7 @@ with tf.Session() as sess:
             cv2.imwrite(pred_path, pred_img)
 
 fourcc = cv2.cv.CV_FOURCC("M", "J", "P", "G")
-out = cv2.VideoWriter(results_dir + "KITTI_seq_test_0_pred.avi", fourcc, 10.0, (img_width, img_height))
+out = cv2.VideoWriter(results_dir + "Cityscapes_seq_0_pred.avi", fourcc, 10.0, (img_width, img_height))
 
 frame_names = sorted(os.listdir(results_dir))
 for step, frame_name in enumerate(frame_names):
