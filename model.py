@@ -27,7 +27,6 @@ class SqueezeDet_model(object):
 
         self.no_of_classes = 3
         self.class_string_to_label = {"car": 0, "pedestrian": 1, "cyclist": 2}
-        #self.class_weights = cPickle.load(open("data/class_weights.pkl"))
 
         self.initial_lr = 0.01
         self.decay_steps =  10000

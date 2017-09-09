@@ -25,19 +25,27 @@ def visualize_gt_label(img_path, label_path):
     img_with_bboxes = img
     return img_with_bboxes
 
-def draw_bboxes(img, bboxes, class_labels):
+def draw_bboxes(img, bboxes, class_labels, probs=None):
     class_label_to_string = {0: "car", 1: "pedestrian", 2: "cyclist"}
     class_to_color = {"car": (255, 191, 0),
                       "cyclist": (0, 191, 255),
                       "pedestrian": (255, 0, 191)}
 
-    for bbox, class_label in zip(bboxes, class_labels):
+    for bbox, class_label, prob in zip(bboxes, class_labels, probs):
         xmin, ymin, xmax, ymax = bbox_transform(bbox)
+
+        h = ymax - ymin
+        w = xmax - xmin
 
         class_string = class_label_to_string[class_label]
 
         cv2.rectangle(img, (int(xmin), int(ymax)), (int(xmax), int(ymin)),
                     class_to_color[class_string], 2)
+        if probs is not None:
+            cv2.rectangle(img, (int(xmin), int(ymin)), (int(xmax), int(ymin-12)),
+                        class_to_color[class_string], -1)
+            prob_string = "%.2f" % prob
+            cv2.putText(img, prob_string, (int(xmin)+2, int(ymin)-2), 2, 0.4, (255,255,255), 0)
 
     img_with_bboxes = img
     return img_with_bboxes

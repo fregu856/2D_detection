@@ -217,7 +217,7 @@ def evaluate_on_val():
             final_classes = [final_classes[idx] for idx in keep_idx]
 
             # draw the bboxes that the model would've output in inference:
-            pred_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, final_bboxes, final_classes)
+            pred_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, final_bboxes, final_classes, final_probs)
             pred_img = cv2.resize(pred_img, (int(0.4*img_width), int(0.4*img_height)))
             pred_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred.png"
             cv2.imwrite(pred_path, pred_img)
@@ -252,7 +252,7 @@ def evaluate_on_val():
 
             # draw the outputed bboxes that are assigned to a ground truth bboxes
             # on the first batch image and save to disk: (so that one can compare the gt bboxes and what the model outputs for the asigned anchors, i.e. for the anchors that should match perfectly)
-            pred_assigned_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, filtered_pred_bboxes, filtered_pred_classes)
+            pred_assigned_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, filtered_pred_bboxes, filtered_pred_classes, filtered_pred_probs)
             pred_assigned_img = cv2.resize(pred_assigned_img, (int(0.4*img_width), int(0.4*img_height)))
             pred_assigned_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred_assigned.png"
             cv2.imwrite(pred_assigned_path, pred_assigned_img)

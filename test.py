@@ -211,11 +211,78 @@ import numpy as np
 #
 # load_data()
 
-from utilities import get_caffemodel_weights
+# from utilities import get_caffemodel_weights
+#
+# prototxt_path = "data/deploy.prototxt"
+# caffemodel_path = "data/squeezenet_v1.0.caffemodel"
+# caffemodel_weights = get_caffemodel_weights(prototxt_path, caffemodel_path)
+#
+# cPickle.dump(caffemodel_weights,
+#             open("data/caffemodel_weights.pkl", "w"))
 
-prototxt_path = "data/deploy.prototxt"
-caffemodel_path = "data/squeezenet_v1.0.caffemodel"
-caffemodel_weights = get_caffemodel_weights(prototxt_path, caffemodel_path)
 
-cPickle.dump(caffemodel_weights,
-            open("data/caffemodel_weights.pkl", "w"))
+
+# val_losses = cPickle.load(open("training_logs/model_1/val_loss_per_epoch.pkl"))
+# ind = 0
+# for value in val_losses:
+#     print "%d: %f" %(ind, value)
+#     ind += 1
+
+
+# import os
+#
+# project_dir = "/home/fregu856/2D_detection/"
+# KITTI_dir = "/home/fregu856/data/KITTI/"
+#
+# # split the KITTI training data into train/val:
+# test_imgs_dir = KITTI_dir + "/data_object/testing/image_2/"
+#
+# test_img_paths = []
+#
+# test_img_names = os.listdir("video")
+# for step, img_name in enumerate(test_img_names):
+#     if step % 100 == 0:
+#         print step
+#
+#     img_id = img_name.split(".png")[0]
+#
+#     img_path = "video/" + img_name
+#     test_img_paths.append(img_path)
+#
+# cPickle.dump(test_img_paths,
+#             open(project_dir + "data/video_img_paths.pkl", "w"))
+
+# data_dir = "/home/fregu856/data/"
+#
+# new_img_height = 375
+# new_img_width = 1242
+#
+# cap = cv2.VideoCapture(data_dir + "trollhattan_video/trollhattan_video.mp4")
+# counter = 0
+# while True:
+#     # capture frame-by-frame:
+#     ret, frame = cap.read()
+#     if counter % 100 == 0:
+#         print counter
+#         frame = frame[new_img_height:, :new_img_width]
+#         cv2.imwrite(str(counter) + ".png", frame)
+#
+#     counter += 1
+
+import os
+
+new_img_height = 375
+new_img_width = 1242
+
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('output.avi',fourcc, 12.0, (new_img_width, new_img_height))
+
+frame_names = sorted(os.listdir("results_on_trollhattan_video"))
+for step, frame_name in enumerate(frame_names):
+    if step % 100 == 0:
+        print step
+
+    frame_path = "results_on_trollhattan_video/" + frame_name
+    frame = cv2.imread(frame_path, -1)
+
+    out.write(frame)
