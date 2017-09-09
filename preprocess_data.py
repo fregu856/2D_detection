@@ -226,47 +226,45 @@ no_of_classes = 3
 
 
 
-cap = cv2.VideoCapture(data_dir + "trollhattan_video/trollhattan_video.mp4")
-trollhattan_frame_paths = []
-counter = 0
-while True:
-    # capture frame-by-frame:
-    ret, frame = cap.read()
-    if counter % 3 == 0 and ((counter > 34600 and counter < 37030) or (counter > 27500 and counter < 29370)):
-        print counter
-
-        frame = frame[new_img_height:, :new_img_width]
-
-        frame_path = data_dir + "trollhattan_video/" + str(counter) + ".png"
-        trollhattan_frame_paths.append(frame_path)
-        cv2.imwrite(frame_path, frame)
-
-    counter += 1
-
-    if counter > 40000:
-        break
-
-cPickle.dump(trollhattan_frame_paths,
-            open(project_dir + "data/trollhattan_frame_paths.pkl", "w"))
-
-
-
-
-
-
-# test_img_paths = []
-# test_img_names = os.listdir("video")
-# for step, img_name in enumerate(test_img_names):
-#     if step % 100 == 0:
-#         print step
+# cap = cv2.VideoCapture(data_dir + "trollhattan_video/trollhattan_video.mp4")
+# trollhattan_frame_paths = []
+# counter = 0
+# while True:
+#     # capture frame-by-frame:
+#     ret, frame = cap.read()
+#     if counter % 3 == 0 and ((counter > 34600 and counter < 37030) or (counter > 27500 and counter < 29370)):
+#         print counter
 #
-#     img_id = img_name.split(".png")[0]
+#         frame = frame[new_img_height:, :new_img_width]
 #
-#     img_path = "video/" + img_name
-#     test_img_paths.append(img_path)
+#         frame_path = data_dir + "trollhattan_video/" + str(counter) + ".png"
+#         trollhattan_frame_paths.append(frame_path)
+#         cv2.imwrite(frame_path, frame)
 #
-# cPickle.dump(test_img_paths,
-#             open(project_dir + "data/video_img_paths.pkl", "w"))
+#     counter += 1
+#
+#     if counter > 40000:
+#         break
+#
+# cPickle.dump(trollhattan_frame_paths,
+#             open(project_dir + "data/trollhattan_frame_paths.pkl", "w"))
+
+
+
+
+
+
+KITTI_seq_frame_paths = []
+frame_names = os.listdir(data_dir + "KITTI_sequence/")
+for step, frame_name in enumerate(frame_names):
+    if step % 100 == 0:
+        print step
+
+    frame_path = data_dir + "KITTI_sequence/" + frame_name
+    KITTI_seq_frame_paths.append(frame_path)
+
+cPickle.dump(KITTI_seq_frame_paths,
+            open(project_dir + "data/KITTI_seq_frame_paths.pkl", "w"))
 
 
 

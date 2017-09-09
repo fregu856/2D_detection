@@ -274,8 +274,8 @@ import os
 new_img_height = 375
 new_img_width = 1242
 
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('output.avi',fourcc, 12.0, (new_img_width, new_img_height))
+fourcc = cv2.VideoWriter_fourcc(*"XVID")
+out = cv2.VideoWriter("output.avi",fourcc, 12.0, (new_img_width, new_img_height))
 
 frame_names = sorted(os.listdir("results_on_trollhattan_video"))
 for step, frame_name in enumerate(frame_names):

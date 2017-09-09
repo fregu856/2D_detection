@@ -86,15 +86,16 @@ with tf.Session() as sess:
             pred_path = results_dir + img_name.split(".png")[0] + "_pred.png"
             cv2.imwrite(pred_path, pred_img)
 
-fourcc = cv2.VideoWriter_fourcc(*"XVID")
-out = cv2.VideoWriter("trollhattan_video_pred.avi", fourcc, 12.0, (img_width, img_height))
+fourcc = cv2.cv.CV_FOURCC("M", "J", "P", "G")
+out = cv2.VideoWriter(results_dir + "trollhattan_video_pred.avi", fourcc, 12.0, (img_width, img_height))
 
 frame_names = sorted(os.listdir(results_dir))
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
         print step
 
-    frame_path = results_dir + frame_name
-    frame = cv2.imread(frame_path, -1)
+    if ".png" in frame_name:
+        frame_path = results_dir + frame_name
+        frame = cv2.imread(frame_path, -1)
 
-    out.write(frame)
+        out.write(frame)
