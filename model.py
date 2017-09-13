@@ -20,8 +20,8 @@ class SqueezeDet_model(object):
 
         self.model_id = model_id
 
-        #self.project_dir = "/home/fregu856/2D_detection/"
-        self.project_dir = "/root/2D_detection/"
+        self.project_dir = "/home/fregu856/2D_detection/"
+        #self.project_dir = "/root/2D_detection/"
 
         self.logs_dir =  self.project_dir + "training_logs/"
 
@@ -34,7 +34,7 @@ class SqueezeDet_model(object):
 
         self.img_height = 375
         self.img_width = 1242
-        self.batch_size = 32
+        self.batch_size = 1
 
         self.anchor_bboxes = self.set_anchors() # (anchor_bboxes has shape [anchors_per_img, 4])
         self.anchors_per_img = len(self.anchor_bboxes)

@@ -306,25 +306,51 @@ no_of_classes = 3
 # cPickle.dump(KITTI_seq_test_4_frame_paths,
 #             open(project_dir + "data/KITTI_seq_test_4_frame_paths.pkl", "w"))
 
-
-
-
-
-
-Cityscapes_dir = data_dir + "cityscapes/"
-
-Cityscapes_seq_0_frame_paths = []
-Cityscapes_seq_dir = Cityscapes_dir + "leftImg8bit/demoVideo/stuttgart_00/"
-frame_names = os.listdir(Cityscapes_seq_dir)
+KITTI_seq_test_12_frame_paths = []
+KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0012/"
+frame_names = os.listdir(KITTI_seq_dir)
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
         print step
 
-    frame_path = Cityscapes_dir + "leftImg8bit/demoVideo/stuttgart_00/" + frame_name
-    Cityscapes_seq_0_frame_paths.append(frame_path)
+    frame_path = KITTI_dir + "data_tracking/testing/image_02/0012/" + frame_name
+    KITTI_seq_test_12_frame_paths.append(frame_path)
 
-cPickle.dump(Cityscapes_seq_0_frame_paths,
-            open(project_dir + "data/Cityscapes_seq_0_frame_paths.pkl", "w"))
+cPickle.dump(KITTI_seq_test_12_frame_paths,
+            open(project_dir + "data/KITTI_seq_test_12_frame_paths.pkl", "w"))
+
+# KITTI_seq_test_24_frame_paths = []
+# KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0024/"
+# frame_names = os.listdir(KITTI_seq_dir)
+# for step, frame_name in enumerate(frame_names):
+#     if step % 100 == 0:
+#         print step
+#
+#     frame_path = KITTI_dir + "data_tracking/testing/image_02/0024/" + frame_name
+#     KITTI_seq_test_24_frame_paths.append(frame_path)
+#
+# cPickle.dump(KITTI_seq_test_24_frame_paths,
+#             open(project_dir + "data/KITTI_seq_test_24_frame_paths.pkl", "w"))
+
+
+
+
+
+
+# Cityscapes_dir = data_dir + "cityscapes/"
+#
+# Cityscapes_seq_0_frame_paths = []
+# Cityscapes_seq_dir = Cityscapes_dir + "leftImg8bit/demoVideo/stuttgart_00/"
+# frame_names = os.listdir(Cityscapes_seq_dir)
+# for step, frame_name in enumerate(frame_names):
+#     if step % 100 == 0:
+#         print step
+#
+#     frame_path = Cityscapes_dir + "leftImg8bit/demoVideo/stuttgart_00/" + frame_name
+#     Cityscapes_seq_0_frame_paths.append(frame_path)
+#
+# cPickle.dump(Cityscapes_seq_0_frame_paths,
+#             open(project_dir + "data/Cityscapes_seq_0_frame_paths.pkl", "w"))
 
 
 

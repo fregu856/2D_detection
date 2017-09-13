@@ -30,7 +30,7 @@ no_of_classes = model.no_of_classes
 train_mean_channels = cPickle.load(open("data/mean_channels.pkl"))
 
 # load the test data from disk
-frame_paths = cPickle.load(open(data_dir + "KITTI_seq_test_4_frame_paths.pkl"))
+frame_paths = cPickle.load(open(data_dir + "KITTI_seq_test_12_frame_paths.pkl"))
 
 # compute the number of batches needed to iterate through the data:
 no_of_frames = len(frame_paths)
@@ -87,7 +87,7 @@ with tf.Session() as sess:
             cv2.imwrite(pred_path, pred_img)
 
 fourcc = cv2.cv.CV_FOURCC("M", "J", "P", "G")
-out = cv2.VideoWriter(results_dir + "KITTI_seq_test_4_pred.avi", fourcc, 10.0, (img_width, img_height))
+out = cv2.VideoWriter(results_dir + "KITTI_seq_test_12_pred.avi", fourcc, 10.0, (img_width, img_height))
 
 frame_names = sorted(os.listdir(results_dir))
 for step, frame_name in enumerate(frame_names):
