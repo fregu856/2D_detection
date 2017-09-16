@@ -11,12 +11,20 @@ import os
 
 from model import SqueezeDet_model
 
-from utilities import draw_bboxes, bbox_transform
+from utilities import bbox_transform
 
-project_dir = "/home/fregu856/2D_detection/"
-#project_dir = "/root/2D_detection/"
+#project_dir = "/home/fregu856/2D_detection/"
+#data_dir = "/home/fregu856/data/"
+project_dir = "/root/2D_detection/"
+data_dir = "/root/data/"
 
-data_dir = project_dir + "data/"
+KITTI_testing_img_dir = data_dir + "KITTI/data_object/testing/image_2/"
+
+test_img_paths = []
+test_img_names = os.listdir(KITTI_testing_img_dir)
+for img_name in test_img_names:
+    img_path = KITTI_testing_img_dir + img_name
+    test_img_paths.append(img_path)
 
 model_id = "test_eval"
 
@@ -28,9 +36,6 @@ img_width = model.img_width
 no_of_classes = model.no_of_classes
 
 train_mean_channels = cPickle.load(open("data/mean_channels.pkl"))
-
-# load the test data from disk
-test_img_paths = cPickle.load(open(data_dir + "test_img_paths.pkl"))
 
 # compute the number of batches needed to iterate through the test data:
 no_of_test_imgs = len(test_img_paths)
@@ -44,8 +49,8 @@ with tf.Session() as sess:
     init = tf.global_variables_initializer()
     sess.run(init)
 
-    saver.restore(sess, "/home/fregu856/2D_detection/training_logs/best_model/model_1_epoch_58.ckpt")
-    #saver.restore(sess, "/root/2D_detection/training_logs/best_model/model_1_epoch_58.ckpt")
+    #saver.restore(sess, "/home/fregu856/2D_detection/training_logs/best_model/model_1_epoch_58.ckpt")
+    saver.restore(sess, "/root/2D_detection/training_logs/best_model/model_1_epoch_58.ckpt")
 
     all_bboxes = [[[] for _ in xrange(no_of_test_imgs)] for _ in xrange(no_of_classes)]
 
@@ -83,18 +88,9 @@ with tf.Session() as sess:
             for c, b, p in zip(final_classes, final_bboxes, final_probs):
                 all_bboxes[c][batch_pointer + i].append(bbox_transform(b) + [p])
 
-            # # draw the bboxes outputed by the model:
-            # pred_img = draw_bboxes(batch_imgs[i].copy()+train_mean_channels, final_bboxes, final_classes, final_probs)
-            # img_name = img_paths[i].split("image_2/")[1]
-            # pred_path = model.project_dir + "results_on_test/" + img_name.split(".png")[0] + "_pred.png"
-            # cv2.imwrite(pred_path, pred_img)
-
         batch_pointer += batch_size
 
-#aps, ap_names = evaluate_detections(all_boxes)
-
-eval_dir = "/home/fregu856/2D_detection/results_on_test/"
-det_file_dir = eval_dir + "detections/"
+det_file_dir = project_dir + "results_on_test/"
 
 class_label_to_string = {0: "car", 1: "pedestrian", 2: "cyclist"}
 
@@ -113,35 +109,3 @@ for index, img_path in enumerate(test_img_paths):
                         class_string.lower(), dets[k][0], dets[k][1], dets[k][2], dets[k][3],
                         dets[k][4])
                 )
-
-# cmd = self._eval_tool + ' ' \
-#       + os.path.join(self._data_root_path, 'training') + ' ' \
-#       + os.path.join(self._data_root_path, 'ImageSets',
-#                      self._image_set+'.txt') + ' ' \
-#       + os.path.dirname(det_file_dir) + ' ' + str(len(self._image_idx))
-#
-# print('Running: {}'.format(cmd))
-# status = subprocess.call(cmd, shell=True)
-#
-# aps = []
-# names = []
-# for cls in self._classes:
-#   det_file_name = os.path.join(
-#       os.path.dirname(det_file_dir), 'stats_{:s}_ap.txt'.format(cls))
-#   if os.path.exists(det_file_name):
-#     with open(det_file_name, 'r') as f:
-#       lines = f.readlines()
-#     assert len(lines) == 3, \
-#         'Line number of {} should be 3'.format(det_file_name)
-#
-#     aps.append(float(lines[0].split('=')[1].strip()))
-#     aps.append(float(lines[1].split('=')[1].strip()))
-#     aps.append(float(lines[2].split('=')[1].strip()))
-#   else:
-#     aps.extend([0.0, 0.0, 0.0])
-#
-#   names.append(cls+'_easy')
-#   names.append(cls+'_medium')
-#   names.append(cls+'_hard')
-#
-# return aps, names
