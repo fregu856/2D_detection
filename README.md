@@ -63,6 +63,8 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - - Ctrl-P + Q
 - To get back into a running image:
 - - $ sudo docker attach fregu856_GPU0
+- To open more than one terminal at the same time:
+- - $ sudo docker exec -it fregu856_GPU0 bash
 
 - Intall needed software (inside the docker image):
 - - $ apt-get update
