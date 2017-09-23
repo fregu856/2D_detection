@@ -1,5 +1,5 @@
-# NOTE! much of this code is inspired by the official SqueezeDet implementation
-# in github.com/BichenWuUCB/squeezeDet
+# NOTE! much of this code is heavily inspired by the official SqueezeDet
+# implementation in github.com/BichenWuUCB/squeezeDet
 
 import numpy as np
 import tensorflow as tf
@@ -262,29 +262,36 @@ class SqueezeDet_model(object):
         # # [batch_size, anchors_per_img])
 
     def add_loss_op(self):
-        # class cross-entropy:
-        # (cross-entropy: q * -log(p) + (1-q) * -log(1-p)) # TODO! is this the normal def? What is the advantage?
-        # (add a small value into log to prevent blowing up)
+        # compute the class cross-entropy loss (adds a small value to log to
+        # prevent it from blowing up):
         class_loss = (self.class_labels_ph*(-tf.log(self.pred_class_probs + self.epsilon)) +
                     (1 - self.class_labels_ph)*(-tf.log(1 - self.pred_class_probs + self.epsilon)))
         class_loss = self.loss_coeff_class*self.mask_ph*class_loss
         class_loss = tf.reduce_sum(class_loss)
-        class_loss = tf.truediv(class_loss, self.no_of_gt_objects) # (tf.truediv is used to ensure that we get no integer divison # TODO! true?)
+        # # normalize the class loss (tf.truediv is used to ensure that we get
+        # # no integer divison):
+        class_loss = tf.truediv(class_loss, self.no_of_gt_objects)
         self.class_loss = class_loss
         tf.add_to_collection("losses", self.class_loss)
 
-        # confidence score regression: # TODO! don't understand how this loss matches the one in the paper! Now I actually understand, this works because self.IOUs is masked as well.
-        # TODO! why do we do mean here, i.e. compute loss per img, but not in the other losses? Doesn't the normalization by no_of_gt_objects take care of that? But shouldn't that be per img in that case?
-        input_mask = tf.reshape(self.mask_ph, [self.batch_size, self.anchors_per_img])
+        # compute the confidence score regression loss (this doesn't look like
+        # the conf loss in the paper, but they are actually equivalent since
+        # self.IOUs is masked as well):
+        input_mask = tf.reshape(self.mask_ph, [self.batch_size,
+                    self.anchors_per_img])
         conf_loss_per_img = (tf.square(self.IOUs - self.pred_conf_scores)*
                     (input_mask*self.loss_coeff_conf_pos/self.no_of_gt_objects +
-                    (1 - input_mask)*self.loss_coeff_conf_neg/(self.anchors_per_img - self.no_of_gt_objects))) # TODO! self.anchors_per_img*self.batch_size instead of just self.anchors_per_img?
+                    (1 - input_mask)*self.loss_coeff_conf_neg/(self.anchors_per_img - self.no_of_gt_objects)))
         conf_loss_per_img = tf.reduce_sum(conf_loss_per_img, reduction_indices=[1])
         conf_loss = tf.reduce_mean(conf_loss_per_img)
         self.conf_loss = conf_loss
         tf.add_to_collection("losses", self.conf_loss)
+        # # (not sure if we're actually supposed to use reduce_mean in this loss,
+        # # if so I feel like we should divide with the number of gt objects per
+        # # img instead. Think this might be why self.loss_coeff_conf_pos/neg is
+        # # so much larger than the other coefficients)
 
-        # bbox regression:
+        # compute the bbox regression loss:
         bbox_loss = self.mask_ph*(self.pred_bbox_deltas - self.gt_deltas_ph)
         bbox_loss = self.loss_coeff_bbox*tf.square(bbox_loss)
         bbox_loss = tf.reduce_sum(bbox_loss)
@@ -292,39 +299,30 @@ class SqueezeDet_model(object):
         self.bbox_loss = bbox_loss
         tf.add_to_collection("losses", self.bbox_loss)
 
-        # total loss:
-        self.loss = tf.add_n(tf.get_collection("losses")) # (sum of the above losses and all variable weight decay losses)
+        # compute the total loss by summing the above losses and all variable
+        # weight decay losses:
+        self.loss = tf.add_n(tf.get_collection("losses"))
 
     def add_train_op(self):
-        global_step = tf.Variable(0, name="gloabk_step", trainable=False)
+        # create an optimizer:
+        global_step = tf.Variable(0, name="global_step", trainable=False)
         lr = tf.train.exponential_decay(learning_rate=self.initial_lr,
                     global_step=global_step, decay_steps=self.decay_steps,
                     decay_rate=self.lr_decay_rate, staircase=True)
         optimizer = tf.train.MomentumOptimizer(learning_rate=lr, momentum=self.momentum)
 
-        # maximum clipping of gradients:
+        # perform maximum clipping of the gradients:
         grads_and_vars = optimizer.compute_gradients(self.loss, tf.trainable_variables())
         for i, (grad, var) in enumerate(grads_and_vars):
             grads_and_vars[i] = (tf.clip_by_norm(grad, self.max_grad_norm), var)
 
-        self.train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step) # (global_step will now automatically be incremented)
+        # create the train op (global_step will automatically be incremented):
+        self.train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
-    # (modified from the official implementation)
     def fire_layer(self, layer_name, input, s1x1, e1x1, e3x3, stddev=0.01, freeze=False):
-        """
-        - Fire layer constructor
-
-        args:
-          layer_name: layer name
-          input: input tensor
-          s1x1: number of 1x1 filters in squeeze layer
-          e1x1: number of 1x1 filters in expand layer
-          e3x3: number of 3x3 filters in expand layer
-          freeze: if true, do not train parameters in this layer
-        """
-
-        # (NOTE! that the layer names ("/squeeze1x1" etc.) below must match the
-        # names in the pretrained SqueezeNet model)
+        # (NOTE! the layer names ("/squeeze1x1" etc.) below must match the
+        # names in the pretrained SqueezeNet model when using this for
+        # initialization)
 
         sq1x1 = self.conv_layer(layer_name + "/squeeze1x1", input, filters=s1x1,
                     size=1, stride=1, padding="SAME", stddev=stddev, freeze=freeze)
@@ -337,35 +335,18 @@ class SqueezeDet_model(object):
 
         return tf.concat([ex1x1, ex3x3], 3)
 
-    # (modified from the official implementation)
     def conv_layer(self, layer_name, input, filters, size, stride, padding="SAME",
                    freeze=False, xavier=False, relu=True, stddev=0.001):
-        """
-        - Convolutional layer operation constructor
-
-        args:
-            layer_name: layer name
-            input: input tensor
-            filters: number of output filters
-            size: kernel size
-            stride: stride
-            padding: "SAME" or "VALID"
-            freeze: if true, then do not train the parameters in this layer
-            xavier: whether to use xavier weight initializer or not
-            relu: whether to use relu or not
-            stddev: standard deviation used for random weight initializer
-        """
-
-        # TODO! comment this entire function properly!
-
         channels = input.get_shape().as_list()[3]
 
-        # get the pretrained parameter values if possible:
         use_pretrained_params = False
         if self.load_pretrained_model:
+            # get the pretrained parameter values if possible:
             cw = self.caffemodel_weights
             if layer_name in cw:
-                kernel_val = np.transpose(cw[layer_name][0], [2,3,1,0]) # (re-order the caffe kernel with shape [filters, channels, h, w] to a tf kernel with shape [h, w, channels, filters])
+                # re-order the caffe kernel with shape [filters, channels, h, w]
+                # to a tf kernel with shape [h, w, channels, filters]:
+                kernel_val = np.transpose(cw[layer_name][0], [2,3,1,0])
                 bias_val = cw[layer_name][1]
                 # check the shape:
                 if kernel_val.shape == (size, size, channels, filters) and (bias_val.shape == (filters, )):
@@ -413,56 +394,29 @@ class SqueezeDet_model(object):
 
             return out
 
-    # (modified from the official implementation)
     def pooling_layer(self, input, size, stride, padding="SAME"):
-        """
-        pooling layer operation constructor
-
-        args:
-            layer_name: layer name.
-            inputs: input tensor
-            size: kernel size.
-            stride: stride
-            padding: "SAME" or "VALID"
-        """
-
         out = tf.nn.max_pool(input, ksize=[1, size, size, 1],
                     strides=[1, stride, stride, 1], padding=padding)
 
         return out
 
-    # (modified from the official implementation)
     def filter_prediction(self, boxes, probs, class_inds):
-        """
-        filter bounding box predictions with probability threshold and
-        non-maximum supression
-
-        args:
-            boxes: array of [cx, cy, w, h].
-            probs: array of probabilities
-            class_inds: array of class indices
-        returns:
-            final_boxes: array of filtered bounding boxes.
-            final_probs: array of filtered probabilities
-            final_class_inds: array of filtered class indices
-        """
-
-        # TODO! better comments above, explain probs and class_inds
-
-        # probs is an array of length anchors_per_img?
+        # (boxes, probs and class_inds are lists of length anchors_per_img)
 
         if self.top_N_detections < len(probs):
             # get the top_N_detections largest probs and their corresponding
             # boxes and class_inds:
-            # # (order[0] is the index of the largest value in probs, order[1] the
-            # # index of the second largest value etc. order has length top_N_detections)
+            # # (order[0] is the index of the largest value in probs, order[1]
+            # # the index of the second largest value etc. order has length
+            # # top_N_detections)
             order = probs.argsort()[:-self.top_N_detections-1:-1]
             probs = probs[order]
             boxes = boxes[order]
             class_inds = class_inds[order]
         else:
-            # remove all boxes, probs and class_inds corr. to prob values <= prob_thresh:
-            filtered_idx = np.nonzero(probs > self.prob_thresh)[0] # TODO! shouldn't we ALWAYS do this filtering?
+            # remove all boxes, probs and class_inds corr. to
+            # prob values <= prob_thresh:
+            filtered_idx = np.nonzero(probs > self.prob_thresh)[0]
             probs = probs[filtered_idx]
             boxes = boxes[filtered_idx]
             class_inds = class_inds[filtered_idx]
@@ -470,9 +424,6 @@ class SqueezeDet_model(object):
         final_boxes = []
         final_probs = []
         final_class_inds = []
-
-        # TODO! comment this below!
-
         for c in range(self.no_of_classes):
             inds_for_c = [i for i in range(len(probs)) if class_inds[i] == c]
             keep = nms(boxes[inds_for_c], probs[inds_for_c], self.nms_thresh)
@@ -484,33 +435,22 @@ class SqueezeDet_model(object):
 
         return final_boxes, final_probs, final_class_inds
 
-    # (modified from the official implementation)
     def variable_with_weight_decay(self, name, shape, wd, initializer, trainable=True):
-        """
-        creates an initialized Variable with weight decay. Note that the variable
-        is initialized with a truncated normal distribution. A weight decay is
-        added only if one is specified.
-
-        args:
-            name: name of the variable
-            shape: list of ints
-            wd: add L2Loss weight decay multiplied by this float. If None, weight
-                decay is not added for this Variable.
-        """
-
         var = self.get_variable(name, shape=shape, dtype=tf.float32,
                     initializer=initializer, trainable=trainable)
+
         if wd is not None and trainable:
+            # add a variable weight decay loss:
             weight_decay = wd*tf.nn.l2_loss(var)
             tf.add_to_collection("losses", weight_decay)
 
         return var
 
-    # (modified from the official implementation)
     def get_variable(self, name, shape, dtype, initializer, trainable=True):
-        # this wrapper function is needed because when the initializer is a
-        # constant (kernel_init = tf.constant(kernel_val , dtype=tf.float32)),
-        # you should not specify the shape in tf.get_variable
+        # (this wrapper function of tf.get_variable is needed because when the
+        # initializer is a constant (kernel_init = tf.constant(kernel_val,
+        # dtype=tf.float32)), you should not specify the shape in
+        # tf.get_variable)
 
         if not callable(initializer):
             var = tf.get_variable(name, dtype=dtype, initializer=initializer,
@@ -521,7 +461,6 @@ class SqueezeDet_model(object):
 
         return var
 
-    # (modified from the official implementation:)
     def tensor_IOU(self, box1, box2):
         # intersection:
         xmin = tf.maximum(box1[0], box2[0])
@@ -539,12 +478,14 @@ class SqueezeDet_model(object):
         h2 = box2[3] - box2[1]
         union_area = w1*h1 + w2*h2 - intersection_area
 
-        IOU = intersection_area/(union_area + self.epsilon) # TODO! is epsilon really needed? Doesn't use it in utilities.batch_IOU
+        IOU = intersection_area/(union_area + self.epsilon)
+        # # (don't think self.epsilon is actually needed here)
 
         return IOU
 
     def set_anchors(self):
-        # NOTE! this function is taken from github.com/BichenWuUCB/squeezeDet
+        # NOTE! this function is taken directly from
+        # github.com/BichenWuUCB/squeezeDet
 
         H, W, B = 24, 78, 9
 
