@@ -79,6 +79,12 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 Youtube video of results:  
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
 
+****
+# Training details:
+
+Batch size: 32
+For all other hyper parameters I used the same values as in the paper
+
 Training loss:  
 ![alt text](https://lh3.googleusercontent.com/KX4x--0GCHZPFkaFykI7AC7r6ys_KvH-ypfPK3JmzTSgYAZgx4LgT1pj7SbaVjzhP9ZwOgH8-dio3F4=w1920-h937)
 
