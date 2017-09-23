@@ -76,7 +76,7 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 
 
 ****
-Youtube video of results:
+Youtube video of results:  
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
 
 
