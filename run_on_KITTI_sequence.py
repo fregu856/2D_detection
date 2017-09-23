@@ -8,7 +8,6 @@ from model import SqueezeDet_model
 
 from utilities import draw_bboxes
 
-#project_dir = "/home/fregu856/2D_detection/"
 project_dir = "/root/2D_detection/"
 
 data_dir = project_dir + "data/"
@@ -43,7 +42,6 @@ with tf.Session() as sess:
     sess.run(init)
 
     # restore the best trained model:
-    #saver.restore(sess, "/home/fregu856/2D_detection/training_logs/best_model/model_1_epoch_58.ckpt")
     saver.restore(sess, "/root/2D_detection/training_logs/best_model/model_1_epoch_58.ckpt")
 
     batch_pointer = 0

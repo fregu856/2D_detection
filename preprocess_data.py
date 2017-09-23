@@ -6,8 +6,6 @@ import random
 
 from utilities import bbox_transform_inv
 
-#project_dir = "/home/fregu856/2D_detection/"
-#data_dir = "/home/fregu856/data/"
 project_dir = "/root/2D_detection/"
 data_dir = "/root/data/"
 

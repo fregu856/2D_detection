@@ -11,7 +11,6 @@ from model import SqueezeDet_model
 
 from utilities import sparse_to_dense, batch_IOU, draw_bboxes
 
-#project_dir = "/home/fregu856/2D_detection/"
 project_dir = "/root/2D_detection/"
 
 data_dir = project_dir + "data/"
@@ -504,7 +503,7 @@ with tf.Session() as sess:
 
         # run the model on the validation data:
         val_loss = evaluate_on_val()
-        
+
         # save the val epoch loss:
         val_loss_per_epoch.append(val_loss)
         # save the val epoch losses to disk:

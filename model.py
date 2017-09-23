@@ -13,7 +13,6 @@ class SqueezeDet_model(object):
     def __init__(self, model_id):
         self.model_id = model_id
 
-        #self.project_dir = "/home/fregu856/2D_detection/"
         self.project_dir = "/root/2D_detection/"
 
         self.logs_dir =  self.project_dir + "training_logs/"
