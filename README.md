@@ -78,7 +78,7 @@ Youtube video of results:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
 
 ****
-## Training details:
+### Training details:
 
 - The pretrained SqueezeNet is squeezenet_v1.0.caffemodel and deploy.prototxt from https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.0. Save these files to 2D_detection/data. To load these weights into Tensorflow, one need to have pycaffe installed (must be able to run "import caffe"). Run get_caffemodel_weights in utilities.py and save the output as caffemodel_weights.pkl in 2D_detection/data using cPickle.
 
