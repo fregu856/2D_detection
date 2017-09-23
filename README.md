@@ -12,27 +12,27 @@ Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) ba
 
 preprocess_data.py:  
 - ASSUMES: that all KITTI training images have been placed in data_dir/KITTI/data_object/training/image_2, that all corresponding labels have been placed in data_dir/KITTI/data_object/training/label_2 and that data_dir/KITTI/data_tracking/testing/image_02 contains the 0000, 0001, 0004 and 0012 sequence directories.
-- DOES: performs all neccesary preprocessing of images and labels.
+- DOES: script for performing all neccesary preprocessing of images and labels.
 *****
 
 model.py:  
-- ASSUMES: 
-- DOES: 
+- ASSUMES: that preprocessing_data.py has already been run (or atleast that caffemodel_weights.pkl has been placed in 2D_detection/data).
+- DOES: contains the SqueezeDet_model class.
 *****
 
 utilities.py:  
-- ASSUMES: 
-- DOES: 
+- ASSUMES: -
+- DOES: contains a number of functions used in different parts of the project.
 *****
 
 train.py:  
-- ASSUMES: 
-- DOES: 
+- ASSUMES: that preprocessing_data.py has already been run.
+- DOES: script for training the model.
 *****
 
 run_on_KITTI_sequence.py:  
-- ASSUMES: 
-- DOES: 
+- ASSUMES: that preprocessing_data.py has already been run.
+- DOES: runs a model checkpoint (set in line 45) on all frames in a KITTI test sequence (set in line 28) and creates a video of the result.
 
 ****
 ## Training details:
