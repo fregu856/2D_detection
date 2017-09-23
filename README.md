@@ -8,23 +8,6 @@ Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) ba
 - The results in the video can obviously be improved, but because of limited computing resources (personally funded Azure VM) I did not perform any further hyperparameter tuning. 
 
 ****
-## Training details:
-
-- The SqueezeNet network was initialized with the pretrained model in https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.0 (squeezenet_v1.0.caffemodel and deploy.prototxt). To load these weights into TensorFlow, one needs to have pycaffe installed (must be able to run "import caffe"). Run get_caffemodel_weights in utilities.py and save the output as caffemodel_weights.pkl in 2D_detection/data using cPickle. These files (caffemodel_weights.pkl, squeezenet_v1.0.caffemodel and deploy.prototxt) are also included in 2D_detection/data in the repo.
-
-- Batch size: 32.
-- For all other hyperparameters I used the same values as in the paper.
-
-- Training loss:
-- ![alt text](https://lh3.googleusercontent.com/KX4x--0GCHZPFkaFykI7AC7r6ys_KvH-ypfPK3JmzTSgYAZgx4LgT1pj7SbaVjzhP9ZwOgH8-dio3F4=w1920-h937)
-
-- Validation loss:
-- ![alt text](https://lh6.googleusercontent.com/xE6YioyQtzBW0t5Pw1YSnRUn3wRoJENm7pxo9VFJMNdwQJZYhtMzCqUFE1ONHuXXeg3R7_udm4xObOI=w1920-h937)
-
-- The results in the video above was obtained with the model at epoch 58, for which a checkpoint is included in 2D_detection/training_logs/best_model in the repo.
-
-
-****
 ## Documentation:
 
 preprocess_data.py:  
@@ -50,8 +33,22 @@ train.py:
 run_on_KITTI_sequence.py:  
 - ASSUMES: 
 - DOES: 
-*****
 
+****
+## Training details:
+
+- The SqueezeNet network was initialized with the pretrained model in https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.0 (squeezenet_v1.0.caffemodel and deploy.prototxt). To load these weights into TensorFlow, one needs to have pycaffe installed (must be able to run "import caffe"). Run get_caffemodel_weights in utilities.py and save the output as caffemodel_weights.pkl in 2D_detection/data using cPickle. These files (caffemodel_weights.pkl, squeezenet_v1.0.caffemodel and deploy.prototxt) are also included in 2D_detection/data in the repo.
+
+- Batch size: 32.
+- For all other hyperparameters I used the same values as in the paper.
+
+- Training loss:
+- ![alt text](https://lh3.googleusercontent.com/KX4x--0GCHZPFkaFykI7AC7r6ys_KvH-ypfPK3JmzTSgYAZgx4LgT1pj7SbaVjzhP9ZwOgH8-dio3F4=w1920-h937)
+
+- Validation loss:
+- ![alt text](https://lh6.googleusercontent.com/xE6YioyQtzBW0t5Pw1YSnRUn3wRoJENm7pxo9VFJMNdwQJZYhtMzCqUFE1ONHuXXeg3R7_udm4xObOI=w1920-h937)
+
+- The results in the video above was obtained with the model at epoch 58, for which a checkpoint is included in 2D_detection/training_logs/best_model in the repo.
 
 ******
 ## Training on Microsoft Azure:
