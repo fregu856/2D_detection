@@ -5,6 +5,7 @@
 - Youtube video of results (https://youtu.be/5BBwjvlUULI):
 - [![demo video with results](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
 
+- The results in the video can obviously be improved, but because of limited computing resources (personally funded Azure VM) I did not perform any further hyperparameter tuning. 
 
 ****
 ## Training details:
