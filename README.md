@@ -75,7 +75,9 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - Commit changes to the image (otherwise, the installed packages will be removed at exit!).
 
 
+****
 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
 
 
 
