@@ -25,7 +25,7 @@
 
 
 ******
-
+## Training on Microsoft Azure:
 
 - Download KITTI (data_object_image_2.zip and data_object_label_2.zip).
 
