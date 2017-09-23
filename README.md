@@ -43,10 +43,10 @@ run_on_KITTI_sequence.py:
 - For all other hyperparameters I used the same values as in the paper.
 
 - Training loss:
-- ![alt text](https://raw.githubusercontent.com/fregu856/2D_detection/master/training_logs/model_1/train_loss_per_epoch.png)
+- ![training loss](https://raw.githubusercontent.com/fregu856/2D_detection/master/training_logs/model_1/train_loss_per_epoch.png)
 
 - Validation loss:
-- ![alt text](hhttps://raw.githubusercontent.com/fregu856/2D_detection/master/training_logs/model_1/val_loss_per_epoch.png)
+- ![validation loss](https://raw.githubusercontent.com/fregu856/2D_detection/master/training_logs/model_1/val_loss_per_epoch.png)
 
 - The results in the video above was obtained with the model at epoch 58, for which a checkpoint is included in 2D_detection/training_logs/best_model in the repo.
 
