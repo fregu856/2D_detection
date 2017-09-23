@@ -4,7 +4,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow.core.protobuf import saver_pb2
 import cv2
 import random
 
@@ -17,7 +16,8 @@ project_dir = "/root/2D_detection/"
 
 data_dir = project_dir + "data/"
 
-model_id = "1" # (change this to not overwrite all log data when you train the model)
+# change this to not overwrite all log data when you train the model:
+model_id = "1"
 
 model = SqueezeDet_model(model_id)
 
@@ -26,6 +26,7 @@ img_height = model.img_height
 img_width = model.img_width
 no_of_classes = model.no_of_classes
 
+# load the mean color channels of the train imgs:
 train_mean_channels = cPickle.load(open("data/mean_channels.pkl"))
 
 # load the training data from disk
@@ -37,7 +38,6 @@ train_data = zip(train_img_paths, train_bboxes_per_img)
 no_of_train_imgs = len(train_img_paths)
 no_of_batches = int(no_of_train_imgs/batch_size)
 
-
 # load the validation data from disk
 val_img_paths = cPickle.load(open(data_dir + "val_img_paths.pkl"))
 val_bboxes_per_img = cPickle.load(open(data_dir + "val_bboxes_per_img.pkl"))
@@ -48,12 +48,6 @@ no_of_val_imgs = len(val_img_paths)
 no_of_val_batches = int(no_of_val_imgs/batch_size)
 
 def evaluate_on_val():
-    """
-    - DOES:
-    """
-
-    print "evaluation on val:"
-
     random.shuffle(val_data)
     val_img_paths, val_bboxes_per_img = zip(*val_data)
 
@@ -82,6 +76,7 @@ def evaluate_on_val():
         # no_of_gt_bboxes_in_img containing the index of the assigned anchor
         # for each ground truth bbox in the image)
         anchor_indices_per_img  = []
+
         for i in range(batch_size):
             # read the next img:
             img_path = val_img_paths[batch_pointer + i]
@@ -91,7 +86,8 @@ def evaluate_on_val():
             batch_imgs[i] = img
 
             img_bboxes = val_bboxes_per_img[batch_pointer + i]
-            # (bbox format: [center_x, center_y, w, h, class_label*], *:string)
+            # (bbox format: [center_x, center_y, w, h, class_label] where
+            # class_label is a string)
 
             img_class_labels = [model.class_string_to_label[b[4]] for b in img_bboxes]
             class_labels_per_img.append(img_class_labels)
@@ -150,8 +146,6 @@ def evaluate_on_val():
 
         # (we now have batch_imgs, class_labels_per_img, gt_bboxes_per_img,
         # gt_deltas_per_img and anchor_indices_per_img)
-
-        # TODO! comment this final section much better!
 
         class_label_indices = []
         mask_indices = []
@@ -197,19 +191,21 @@ def evaluate_on_val():
         batch_pointer += batch_size
 
 
-
         batch_feed_dict = model.create_feed_dict(batch_imgs, 1.0, mask=batch_mask,
                     gt_deltas=batch_gt_deltas, gt_bboxes=batch_gt_bboxes,
                     class_labels=batch_class_labels)
 
-        batch_loss, pred_bboxes, detection_classes, detection_probs  = sess.run([model.loss, model.pred_bboxes, model.detection_classes, model.detection_probs],
-                    feed_dict=batch_feed_dict)
+        batch_loss, pred_bboxes, detection_classes, detection_probs  = sess.run(
+                    [model.loss, model.pred_bboxes, model.detection_classes,
+                    model.detection_probs], feed_dict=batch_feed_dict)
         val_batch_losses.append(batch_loss)
-        print "epoch: %d/%d, val step: %d/%d, val batch loss: %g" % (epoch+1, no_of_epochs, step+1, no_of_val_batches, batch_loss)
+        print ("epoch: %d/%d, val step: %d/%d, val batch loss: %g" % (epoch+1,
+                    no_of_epochs, step+1, no_of_val_batches, batch_loss))
 
 
         if step < 5:
-            final_bboxes, final_probs, final_classes = model.filter_prediction(pred_bboxes[0], detection_probs[0], detection_classes[0])
+            final_bboxes, final_probs, final_classes = model.filter_prediction(
+                        pred_bboxes[0], detection_probs[0], detection_classes[0])
 
             keep_idx = [idx for idx in range(len(final_probs)) if final_probs[idx] > model.plot_prob_thresh]
             final_bboxes = [final_bboxes[idx] for idx in keep_idx]
@@ -217,9 +213,12 @@ def evaluate_on_val():
             final_classes = [final_classes[idx] for idx in keep_idx]
 
             # draw the bboxes that the model would've output in inference:
-            pred_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, final_bboxes, final_classes, final_probs)
-            pred_img = cv2.resize(pred_img, (int(0.4*img_width), int(0.4*img_height)))
-            pred_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred.png"
+            pred_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels,
+                        final_bboxes, final_classes, final_probs)
+            pred_img = cv2.resize(pred_img, (int(0.4*img_width),
+                        int(0.4*img_height)))
+            pred_path = (model.debug_imgs_dir + "val_" + str(epoch) + "_" +
+                        str(step) + "_pred.png")
             cv2.imwrite(pred_path, pred_img)
 
 
@@ -245,30 +244,30 @@ def evaluate_on_val():
                     filtered_pred_probs.append(pred_prob)
 
             # draw ground truth bboxes on the first batch image and save to disk:
-            gt_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, filtered_gt_bboxes, filtered_gt_classes)
+            gt_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels,
+                        filtered_gt_bboxes, filtered_gt_classes)
             gt_img = cv2.resize(gt_img, (int(0.4*img_width), int(0.4*img_height)))
-            gt_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_gt.png"
+            gt_path = (model.debug_imgs_dir + "val_" + str(epoch) + "_" +
+                        str(step) + "_gt.png")
             cv2.imwrite(gt_path, gt_img)
 
-            # draw the outputed bboxes that are assigned to a ground truth bboxes
-            # on the first batch image and save to disk: (so that one can compare the gt bboxes and what the model outputs for the asigned anchors, i.e. for the anchors that should match perfectly)
-            pred_assigned_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels, filtered_pred_bboxes, filtered_pred_classes, filtered_pred_probs)
-            pred_assigned_img = cv2.resize(pred_assigned_img, (int(0.4*img_width), int(0.4*img_height)))
-            pred_assigned_path = model.debug_imgs_dir + "val_" + str(epoch) + "_" + str(step) + "_pred_assigned.png"
+            # draw the predicted bboxes that are assigned to a ground truth bbox
+            # on the first batch image and save to disk (so that one can compare
+            # the gt bboxes and what the model outputs for the asigned anchors,
+            # i.e. for the anchors that should match perfectly):
+            pred_assigned_img = draw_bboxes(batch_imgs[0].copy()+train_mean_channels,
+                        filtered_pred_bboxes, filtered_pred_classes,
+                        filtered_pred_probs)
+            pred_assigned_img = cv2.resize(pred_assigned_img,
+                        (int(0.4*img_width), int(0.4*img_height)))
+            pred_assigned_path = (model.debug_imgs_dir + "val_" + str(epoch) +
+                        "_" + str(step) + "_pred_assigned.png")
             cv2.imwrite(pred_assigned_path, pred_assigned_img)
-
-
 
     val_loss = np.mean(val_batch_losses)
     return val_loss
 
 def train_data_iterator():
-    """
-    - DOES:
-    """
-
-    # TODO! comment this function more carefully, give more high-level descriptions of what's going on
-
     random.shuffle(train_data)
     train_img_paths, train_bboxes_per_img = zip(*train_data)
 
@@ -296,6 +295,7 @@ def train_data_iterator():
         # no_of_gt_bboxes_in_img containing the index of the assigned anchor
         # for each ground truth bbox in the image)
         anchor_indices_per_img  = []
+
         for i in range(batch_size):
             # read the next img:
             img_path = train_img_paths[batch_pointer + i]
@@ -305,7 +305,8 @@ def train_data_iterator():
             batch_imgs[i] = img
 
             img_bboxes = train_bboxes_per_img[batch_pointer + i]
-            # (bbox format: [center_x, center_y, w, h, class_label*], *:string)
+            # (bbox format: [center_x, center_y, w, h, class_label] where
+            # class_label is a string)
 
             img_class_labels = [model.class_string_to_label[b[4]] for b in img_bboxes]
             class_labels_per_img.append(img_class_labels)
@@ -364,8 +365,6 @@ def train_data_iterator():
 
         # (we now have batch_imgs, class_labels_per_img, gt_bboxes_per_img,
         # gt_deltas_per_img and anchor_indices_per_img)
-
-        # TODO! comment this final section much better!
 
         class_label_indices = []
         mask_indices = []
@@ -424,16 +423,14 @@ conf_loss_per_epoch = []
 bbox_loss_per_epoch = []
 val_loss_per_epoch = []
 
-# initialize a list containing the 5 best val losses (is used to tell when it
-# makes sense to save a model checkpoint):
+# initialize a list containing the 5 best val losses (is used to tell when to
+# save a model checkpoint):
 best_epoch_losses = [1000, 1000, 1000, 1000, 1000]
 
 with tf.Session() as sess:
     # initialize all variables/parameters:
     init = tf.global_variables_initializer()
     sess.run(init)
-
-    #saver.restore(sess, "/home/fregu856/2D_detection/training_logs/model_1/checkpoints/model_1_epoch_1.ckpt")
 
     for epoch in range(no_of_epochs):
         print "###########################"
@@ -463,7 +460,8 @@ with tf.Session() as sess:
             batch_losses_conf.append(batch_loss_conf)
             batch_losses_bbox.append(batch_loss_bbox)
 
-            print "epoch: %d/%d, step: %d/%d, training batch loss: %g" % (epoch+1, no_of_epochs, step+1, no_of_batches, batch_loss)
+            print ("epoch: %d/%d, step: %d/%d, training batch loss: %g" % (epoch+1,
+                        no_of_epochs, step+1, no_of_batches, batch_loss))
             print "                           class batch loss: %g" % batch_loss_class
             print "                           conf batch loss: %g" % batch_loss_conf
             print "                           bbox batch loss: %g" % batch_loss_bbox
@@ -506,6 +504,7 @@ with tf.Session() as sess:
 
         # run the model on the validation data:
         val_loss = evaluate_on_val()
+        
         # save the val epoch loss:
         val_loss_per_epoch.append(val_loss)
         # save the val epoch losses to disk:
