@@ -91,4 +91,4 @@ Youtube video of results:
 - Validation loss:
 - ![alt text](https://lh6.googleusercontent.com/xE6YioyQtzBW0t5Pw1YSnRUn3wRoJENm7pxo9VFJMNdwQJZYhtMzCqUFE1ONHuXXeg3R7_udm4xObOI=w1920-h937)
 
-
+- The results in the video above was obtained with the model at epoch 57
