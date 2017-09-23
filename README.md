@@ -1,6 +1,6 @@
 # 2D_detection
 
-Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) based on the official implementation (https://github.com/BichenWuUCB/squeezeDet), trained on the KITTI dataset (http://www.cvlibs.net/datasets/kitti/).
+Tensorflow implementation of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) based on the official implementation (https://github.com/BichenWuUCB/squeezeDet), trained on the KITTI dataset (http://www.cvlibs.net/datasets/kitti/).
 
 - Youtube video of results (https://youtu.be/5BBwjvlUULI):
 - [![demo video with results](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
@@ -12,11 +12,11 @@ Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) ba
 
 preprocess_data.py:  
 - ASSUMES: that all KITTI training images have been placed in data_dir/KITTI/data_object/training/image_2, that all corresponding labels have been placed in data_dir/KITTI/data_object/training/label_2 and that data_dir/KITTI/data_tracking/testing/image_02 contains the 0000, 0001, 0004 and 0012 sequence directories.
-- DOES: script for performing all neccesary preprocessing of images and labels.
+- DOES: script for performing all necessary preprocessing of images and labels.
 *****
 
 model.py:  
-- ASSUMES: that preprocessing_data.py has already been run (or atleast that caffemodel_weights.pkl has been placed in 2D_detection/data).
+- ASSUMES: that preprocessing_data.py has already been run (or at least that caffemodel_weights.pkl has been placed in 2D_detection/data).
 - DOES: contains the SqueezeDet_model class.
 *****
 
@@ -76,7 +76,7 @@ To train the model, I used an NC6 virtual machine on Microsoft Azure. Below I ha
 - - $ sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
 - - $ sudo nvidia-docker run --rm nvidia/cuda nvidia-smi
 
-- Download latest tensorflow docker image with GPU support (tensorflow 1.3):
+- Download the latest TensorFlow docker image with GPU support (tensorflow 1.3):
 - - $ sudo docker pull tensorflow/tensorflow:latest-gpu
 
 - Create start_docker_image.sh containing:
