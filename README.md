@@ -43,7 +43,7 @@ To train the model, I used an NC6 virtual machine on Microsoft Azure. Below I ha
 - - $ rm -f /tmp/${CUDA_REPO_PKG}
 - - $ sudo apt-get update
 - - $ sudo apt-get install cuda-drivers
-- - Reboot the VM.
+- - Reboot the VM
 
 - Install nvidia-docker:
 - - $ wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
@@ -85,7 +85,7 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - To open more than one terminal window at the same time:
 - - $ sudo docker exec -it fregu856_GPU0 bash
 
-- Intall needed software (inside the docker image):
+- To install the needed software inside the docker image:
 - - $ apt-get update
 - - $ apt-get install nano
 - - $ apt-get install sudo
