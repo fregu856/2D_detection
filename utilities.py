@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
+# function for drawing all ground truth bboxes of an image on the image:
 def visualize_gt_label(img_path, label_path):
     class_to_color = {"car": (255, 191, 0),
                       "cyclist": (0, 191, 255),
@@ -20,11 +21,14 @@ def visualize_gt_label(img_path, label_path):
             x_right = int(float(splitted_line[6]))
             y_top = int(float(splitted_line[7]))
 
-            cv2.rectangle(img, (x_left, y_top), (x_right, y_bottom), class_to_color[bbox_class], 2)
+            # draw the bbox:
+            cv2.rectangle(img, (x_left, y_top), (x_right, y_bottom),
+                        class_to_color[bbox_class], 2)
 
     img_with_bboxes = img
     return img_with_bboxes
 
+# function for drawing a set of bboxes in an img:
 def draw_bboxes(img, bboxes, class_labels, probs=None):
     class_label_to_string = {0: "car", 1: "pedestrian", 2: "cyclist"}
     class_to_color = {"car": (255, 191, 0),
@@ -39,22 +43,26 @@ def draw_bboxes(img, bboxes, class_labels, probs=None):
 
         class_string = class_label_to_string[class_label]
 
+        # draw the bbox:
         cv2.rectangle(img, (int(xmin), int(ymax)), (int(xmax), int(ymin)),
                     class_to_color[class_string], 2)
+
         if probs is not None:
+            # write the detection probability on the bbox:
+            # # make the top line of the bbox thicker:
             cv2.rectangle(img, (int(xmin), int(ymin)), (int(xmax), int(ymin-12)),
                         class_to_color[class_string], -1)
+            # # write the probaility in the top line of the bbox:
             prob_string = "%.2f" % prob
-            cv2.putText(img, prob_string, (int(xmin)+2, int(ymin)-2), 2, 0.4, (255,255,255), 0)
+            cv2.putText(img, prob_string, (int(xmin)+2, int(ymin)-2), 2, 0.4,
+                        (255,255,255), 0)
 
     img_with_bboxes = img
     return img_with_bboxes
 
-# (taken from the official implementation)
 def safe_exp(w, thresh):
-    """
-    safe exponential function for tensors
-    """
+    # NOTE! this function is taken directly from
+    # github.com/BichenWuUCB/squeezeDet
 
     slope = np.exp(thresh)
 
@@ -68,12 +76,9 @@ def safe_exp(w, thresh):
 
     return out
 
-# (modified from the official implementation)
+# function for converting a bbox of [cx, cy, w, h] format to
+# [xmin, ymin, xmax, ymax] format:
 def bbox_transform(bbox):
-    """
-    convert a bbox of form [cx, cy, w, h] to [xmin, ymin, xmax, ymax]
-    """
-
     cx, cy, w, h = bbox
 
     xmin = cx - w/2
@@ -85,12 +90,9 @@ def bbox_transform(bbox):
 
     return out_box
 
-# (modified from the official implementation)
+# function for converting a bbox of [xmin, ymin, xmax, ymax] format to
+# [cx, cy, w, h] format:
 def bbox_transform_inv(bbox):
-    """
-    convert a bbox of form [xmin, ymin, xmax, ymax] to [cx, cy, w, h]
-    """
-
     xmin, ymin, xmax, ymax = bbox
 
     w = xmax - xmin + 1.0
@@ -102,26 +104,15 @@ def bbox_transform_inv(bbox):
 
     return out_box
 
-# (taken from the official implementation)
+# function for performing non-maximum suppression:
 def nms(boxes, probs, threshold):
-    """
-    Non-Maximum Supression
+    # NOTE! this function is taken directly from
+    # github.com/BichenWuUCB/squeezeDet
 
-    args:
-        boxes: array of [cx, cy, w, h]
-        probs: array of probabilities
-        threshold: two boxes are considered overlapping if their IOU is larger
-                   than this threshold
+    # get indices in descending order acc. to prob:
+    order = probs.argsort()[::-1]
 
-    returns:
-        keep: array of True or False
-    """
-
-    # TODO! how does this work?! Think I roughly understand now
-
-    order = probs.argsort()[::-1] # (indices in descending order acc. to prob)
     keep = [True]*len(order)
-
     for i in range(len(order)-1):
         ovps = batch_IOU(boxes[order[i+1:]], boxes[order[i]])
         for j, ov in enumerate(ovps):
@@ -130,19 +121,8 @@ def nms(boxes, probs, threshold):
 
     return keep
 
-# (modified from the official implementation)
+# function for computing the IOU between a bbox and a batch of bboxes:
 def batch_IOU(boxes, box):
-    """
-    compute the Intersection-Over-Union of a batch of boxes with another box
-
-    args:
-        boxes: array of [cx, cy, width, height]
-        box: a single box [cx, cy, width, height]
-
-    returns:
-        IOUs: array of a float number in range [0, 1]
-    """
-
     intersect_xmax = np.minimum(boxes[:, 0] + 0.5*boxes[:, 2], box[0] + 0.5*box[2])
     intersect_xmin = np.maximum(boxes[:, 0] - 0.5*boxes[:, 2], box[0] - 0.5*box[2])
     intersect_ymax = np.minimum(boxes[:, 1] + 0.5*boxes[:, 3], box[1] + 0.5*box[3])
@@ -158,20 +138,20 @@ def batch_IOU(boxes, box):
 
     return IOUs
 
-# (modified from the official implementation)
+# function for building a dense matrix from a sparse representation:
 def sparse_to_dense(indices, output_shape, values, default_value=0):
-    """
-    build a dense matrix from sparse representations
+    # NOTE! this function is a modified version of sparse_to_dense in
+    # github.com/BichenWuUCB/squeezeDet
 
-    args:
-        indices: list of indices. if indices[i] = [k, l], then array[k,l] should be set to values[i]
-        output_shape: shape of the dense matrix
-        values: list of values. if indices[i] = [k, l], then array[k,l] should be set to values[i]
-        default_value: values to set for indices not specified in indices
+    # (indices: list of indices. if indices[i] = [k, l], then array[k,l] should
+    # be set to values[i])
 
-    returns:
-        array: a dense numpy array with shape output_shape
-    """
+    # (output_shape: shape of the dense matrix)
+
+    # (values: list of values. if indices[i] = [k, l], then array[k,l] should be
+    # set to values[i])
+    
+    # (default_value: values to set for indices not specified in indices)
 
     array = np.ones(output_shape)*default_value
     for idx, value in zip(indices, values):
@@ -179,8 +159,11 @@ def sparse_to_dense(indices, output_shape, values, default_value=0):
 
     return array
 
-# (modified from utils/caffemodel2pkl.py in the official implementation)
+# function for reading all variable values from a caffe model:
 def get_caffemodel_weights(prototxt_path, caffemodel_path):
+    # NOTE! this function is inspired by utils/caffemodel2pkl.py in
+    # github.com/BichenWuUCB/squeezeDet
+
     import caffe
 
     net = caffe.Net(prototxt_path, caffemodel_path, caffe.TEST)
