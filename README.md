@@ -2,8 +2,6 @@
 
 Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) based on the official implementation (https://github.com/BichenWuUCB/squeezeDet), trained on the KITTI dataset (http://www.cvlibs.net/datasets/kitti/).
 
-- The pretrained SqueezeNet is squeezenet_v1.0.caffemodel and deploy.prototxt from https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.0. Save these files to 2D_detection/data. To load these weights into Tensorflow, one need to have pycaffe installed (must be able to run "import caffe"). Run get_caffemodel_weights in utilities.py and save the output as caffemodel_weights.pkl in /data using cPickle.
-
 
 
 ******
@@ -80,7 +78,9 @@ Youtube video of results:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
 
 ****
-# Training details:
+## Training details:
+
+- The pretrained SqueezeNet is squeezenet_v1.0.caffemodel and deploy.prototxt from https://github.com/DeepScale/SqueezeNet/tree/master/SqueezeNet_v1.0. Save these files to 2D_detection/data. To load these weights into Tensorflow, one need to have pycaffe installed (must be able to run "import caffe"). Run get_caffemodel_weights in utilities.py and save the output as caffemodel_weights.pkl in 2D_detection/data using cPickle.
 
 - Batch size: 32
 - For all other hyper parameters I used the same values as in the paper
