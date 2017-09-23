@@ -82,13 +82,13 @@ Youtube video of results:
 ****
 # Training details:
 
-Batch size: 32
-For all other hyper parameters I used the same values as in the paper
+- Batch size: 32
+- For all other hyper parameters I used the same values as in the paper
 
-Training loss:  
+- Training loss:
 ![alt text](https://lh3.googleusercontent.com/KX4x--0GCHZPFkaFykI7AC7r6ys_KvH-ypfPK3JmzTSgYAZgx4LgT1pj7SbaVjzhP9ZwOgH8-dio3F4=w1920-h937)
 
-Validation loss:  
+- Validation loss:
 ![alt text](https://lh6.googleusercontent.com/xE6YioyQtzBW0t5Pw1YSnRUn3wRoJENm7pxo9VFJMNdwQJZYhtMzCqUFE1ONHuXXeg3R7_udm4xObOI=w1920-h937)
 
 
