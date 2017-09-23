@@ -2,6 +2,9 @@
 
 Tensorflow implementaton of SqueezeDet (https://arxiv.org/pdf/1612.01051.pdf) based on the official implementation (https://github.com/BichenWuUCB/squeezeDet), trained on the KITTI dataset (http://www.cvlibs.net/datasets/kitti/).
 
+Youtube video of results:  
+[![demo video with results](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
+
 
 
 ******
@@ -71,11 +74,6 @@ NV_GPU="$GPUIDS" nvidia-docker run -it --rm \
 - - $ apt-get install wget
 - - $ sudo apt-get install libopencv-dev python-opencv
 - Commit changes to the image (otherwise, the installed packages will be removed at exit!).
-
-
-****
-Youtube video of results:  
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/5BBwjvlUULI/0.jpg)](https://www.youtube.com/watch?v=5BBwjvlUULI)
 
 ****
 ## Training details:
