@@ -46,7 +46,7 @@ run_on_KITTI_sequence.py:
 - ![alt text](https://raw.githubusercontent.com/fregu856/2D_detection/master/training_logs/model_1/train_loss_per_epoch.png)
 
 - Validation loss:
-- ![alt text](https://lh6.googleusercontent.com/xE6YioyQtzBW0t5Pw1YSnRUn3wRoJENm7pxo9VFJMNdwQJZYhtMzCqUFE1ONHuXXeg3R7_udm4xObOI=w1920-h937)
+- ![alt text](hhttps://raw.githubusercontent.com/fregu856/2D_detection/master/training_logs/model_1/val_loss_per_epoch.png)
 
 - The results in the video above was obtained with the model at epoch 58, for which a checkpoint is included in 2D_detection/training_logs/best_model in the repo.
 
