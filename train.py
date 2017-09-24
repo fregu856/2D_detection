@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import cPickle
 import matplotlib
@@ -432,10 +433,10 @@ with tf.Session() as sess:
     sess.run(init)
 
     for epoch in range(no_of_epochs):
-        print "###########################"
-        print "######## NEW EPOCH ########"
-        print "###########################"
-        print "epoch: %d/%d" % (epoch+1, no_of_epochs)
+        print("###########################")
+        print("######## NEW EPOCH ########")
+        print("###########################")
+        print("epoch: %d/%d" % (epoch+1, no_of_epochs))
 
         # run an epoch and get all batch losses:
         batch_losses = []
@@ -461,9 +462,9 @@ with tf.Session() as sess:
 
             print ("epoch: %d/%d, step: %d/%d, training batch loss: %g" % (epoch+1,
                         no_of_epochs, step+1, no_of_batches, batch_loss))
-            print "                           class batch loss: %g" % batch_loss_class
-            print "                           conf batch loss: %g" % batch_loss_conf
-            print "                           bbox batch loss: %g" % batch_loss_bbox
+            print("                           class batch loss: %g" % batch_loss_class)
+            print("                           conf batch loss: %g" % batch_loss_conf)
+            print("                           bbox batch loss: %g" % batch_loss_bbox)
 
         # compute the train epoch loss:
         train_epoch_loss = np.mean(batch_losses)
@@ -472,7 +473,7 @@ with tf.Session() as sess:
         # save the train epoch losses to disk:
         cPickle.dump(train_loss_per_epoch, open("%strain_loss_per_epoch.pkl"
                     % model.model_dir, "w"))
-        print "training loss: %g" % train_epoch_loss
+        print("training loss: %g" % train_epoch_loss)
 
         # compute the class epoch loss:
         class_epoch_loss = np.mean(batch_losses_class)
@@ -481,7 +482,7 @@ with tf.Session() as sess:
         # save the class epoch losses to disk:
         cPickle.dump(class_loss_per_epoch, open("%sclass_loss_per_epoch.pkl"
                     % model.model_dir, "w"))
-        print "class loss: %g" % class_epoch_loss
+        print("class loss: %g" % class_epoch_loss)
 
         # compute the conf epoch loss:
         conf_epoch_loss = np.mean(batch_losses_conf)
@@ -490,7 +491,7 @@ with tf.Session() as sess:
         # save the conf epoch losses to disk:
         cPickle.dump(conf_loss_per_epoch, open("%sconf_loss_per_epoch.pkl"
                     % model.model_dir, "w"))
-        print "conf loss: %g" % conf_epoch_loss
+        print("conf loss: %g" % conf_epoch_loss)
 
         # compute the bbox epoch loss:
         bbox_epoch_loss = np.mean(batch_losses_bbox)
@@ -499,7 +500,7 @@ with tf.Session() as sess:
         # save the bbox epoch losses to disk:
         cPickle.dump(bbox_loss_per_epoch, open("%sbbox_loss_per_epoch.pkl"
                     % model.model_dir, "w"))
-        print "bbox loss: %g" % bbox_epoch_loss
+        print("bbox loss: %g" % bbox_epoch_loss)
 
         # run the model on the validation data:
         val_loss = evaluate_on_val()
@@ -509,14 +510,14 @@ with tf.Session() as sess:
         # save the val epoch losses to disk:
         cPickle.dump(val_loss_per_epoch, open("%sval_loss_per_epoch.pkl"\
                     % model.model_dir, "w"))
-        print "validaion loss: %g" % val_loss
+        print("validaion loss: %g" % val_loss)
 
         if val_loss < max(best_epoch_losses): # (if top 5 performance on val:)
             # save the model weights to disk:
             checkpoint_path = (model.checkpoints_dir + "model_" +
                         model.model_id + "_epoch_" + str(epoch + 1) + ".ckpt")
             saver.save(sess, checkpoint_path)
-            print "checkpoint saved in file: %s" % checkpoint_path
+            print("checkpoint saved in file: %s" % checkpoint_path)
 
             # update the top 5 val losses:
             index = best_epoch_losses.index(max(best_epoch_losses))

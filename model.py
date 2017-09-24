@@ -1,3 +1,4 @@
+from __future__ import print_function
 # NOTE! much of this code is heavily inspired by the official SqueezeDet
 # implementation in github.com/BichenWuUCB/squeezeDet
 
@@ -351,24 +352,24 @@ class SqueezeDet_model(object):
                 if kernel_val.shape == (size, size, channels, filters) and (bias_val.shape == (filters, )):
                     use_pretrained_params = True
                 else:
-                    print "Shape of the pretrained parameter of %s does not match, use randomly initialized parameter" % layer_name
+                    print("Shape of the pretrained parameter of %s does not match, use randomly initialized parameter" % layer_name)
             else:
-                print "Cannot find %s in the pretrained model. Use randomly initialized parameters" % layer_name
+                print("Cannot find %s in the pretrained model. Use randomly initialized parameters" % layer_name)
 
         with tf.variable_scope(layer_name) as scope:
             # create the parameter initializers:
             if use_pretrained_params:
-                print "Using pretrained init for " + layer_name
+                print("Using pretrained init for " + layer_name)
 
                 kernel_init = tf.constant(kernel_val , dtype=tf.float32)
                 bias_init = tf.constant(bias_val, dtype=tf.float32)
             elif xavier:
-                print "Using Xavier init for " + layer_name
+                print("Using Xavier init for " + layer_name)
 
                 kernel_init = tf.contrib.layers.xavier_initializer()
                 bias_init = tf.constant_initializer(0.0)
             else:
-                print "Using random normal init for " + layer_name
+                print("Using random normal init for " + layer_name)
 
                 kernel_init = tf.truncated_normal_initializer(stddev=stddev,
                             dtype=tf.float32)

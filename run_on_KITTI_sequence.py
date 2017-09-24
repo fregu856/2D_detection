@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import cPickle
 import tensorflow as tf
@@ -64,7 +65,7 @@ with tf.Session() as sess:
         pred_bboxes, detection_classes, detection_probs  = sess.run([model.pred_bboxes,
                     model.detection_classes, model.detection_probs],
                     feed_dict=batch_feed_dict)
-        print "step: %d/%d" % (step + 1, no_of_batches)
+        print("step: %d/%d" % (step + 1, no_of_batches))
 
         for i in range(batch_size):
             final_bboxes, final_probs, final_classes = model.filter_prediction(
@@ -90,7 +91,7 @@ out = cv2.VideoWriter(results_dir + "KITTI_seq_test_12_pred.avi", fourcc, 10.0,
 frame_names = sorted(os.listdir(results_dir))
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
-        print step
+        print(step)
 
     if ".png" in frame_name:
         frame_path = results_dir + frame_name

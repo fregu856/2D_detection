@@ -1,3 +1,4 @@
+from __future__ import print_function
 import cv2
 import cPickle
 import os
@@ -25,7 +26,7 @@ orig_train_label_paths = []
 orig_train_img_names = os.listdir(orig_train_imgs_dir)
 for step, img_name in enumerate(orig_train_img_names):
     if step % 100 == 0:
-        print step
+        print(step)
 
     img_id = img_name.split(".png")[0]
 
@@ -46,8 +47,8 @@ random.shuffle(orig_train_data)
 no_of_imgs = len(orig_train_img_paths)
 train_data = orig_train_data[:int(no_of_imgs*0.8)]
 val_data = orig_train_data[-int(no_of_imgs*0.2):]
-print "number of val imgs: %d" % len(val_data)
-print "number of train imgs before augmentation: %d " % len(train_data)
+print("number of val imgs: %d" % len(val_data))
+print("number of train imgs before augmentation: %d " % len(train_data))
 
 # # save the val data to disk:
 val_img_paths, val_label_paths = zip(*val_data)
@@ -64,7 +65,7 @@ augmented_train_img_paths = []
 augmented_train_label_paths = []
 for step, (img_path, label_path) in enumerate(train_data):
     if step % 100 == 0:
-        print step
+        print(step)
 
     img = cv2.imread(img_path, -1)
 
@@ -128,7 +129,7 @@ cPickle.dump(train_img_paths,
             open(project_dir + "data/train_img_paths.pkl", "w"))
 # train_label_paths = cPickle.load(open(project_dir + "data/train_label_paths.pkl"))
 # train_img_paths = cPickle.load(open(project_dir + "data/train_img_paths.pkl"))
-print "number of train imgs after augmentation: %d " % len(train_data)
+print("number of train imgs after augmentation: %d " % len(train_data))
 
 
 # compute the mean color channels of the train imgs:
@@ -136,7 +137,7 @@ no_of_train_imgs = len(train_img_paths)
 mean_channels = np.zeros((3, ))
 for step, img_path in enumerate(train_img_paths):
     if step % 100 == 0:
-        print step
+        print(step)
 
     img = cv2.imread(img_path, -1)
 
@@ -157,7 +158,7 @@ cPickle.dump(mean_channels, open(project_dir + "data/mean_channels.pkl", "w"))
 train_bboxes_per_img = []
 for step, label_path in enumerate(train_label_paths):
     if step % 100 == 0:
-        print step
+        print(step)
 
     bboxes = []
     with open(label_path) as label_file:
@@ -184,7 +185,7 @@ cPickle.dump(train_bboxes_per_img,
 val_bboxes_per_img = []
 for step, label_path in enumerate(val_label_paths):
     if step % 100 == 0:
-        print step
+        print(step)
 
     bboxes = []
     with open(label_path) as label_file:
@@ -215,7 +216,7 @@ KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0000/"
 frame_names = os.listdir(KITTI_seq_dir)
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
-        print step
+        print(step)
 
     frame_path = KITTI_dir + "data_tracking/testing/image_02/0000/" + frame_name
     KITTI_seq_test_0_frame_paths.append(frame_path)
@@ -229,7 +230,7 @@ KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0001/"
 frame_names = os.listdir(KITTI_seq_dir)
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
-        print step
+        print(step)
 
     frame_path = KITTI_dir + "data_tracking/testing/image_02/0001/" + frame_name
     KITTI_seq_test_1_frame_paths.append(frame_path)
@@ -243,7 +244,7 @@ KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0004/"
 frame_names = os.listdir(KITTI_seq_dir)
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
-        print step
+        print(step)
 
     frame_path = KITTI_dir + "data_tracking/testing/image_02/0004/" + frame_name
     KITTI_seq_test_4_frame_paths.append(frame_path)
@@ -257,7 +258,7 @@ KITTI_seq_dir = KITTI_dir + "data_tracking/testing/image_02/0012/"
 frame_names = os.listdir(KITTI_seq_dir)
 for step, frame_name in enumerate(frame_names):
     if step % 100 == 0:
-        print step
+        print(step)
 
     frame_path = KITTI_dir + "data_tracking/testing/image_02/0012/" + frame_name
     KITTI_seq_test_12_frame_paths.append(frame_path)
