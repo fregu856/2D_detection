@@ -34,7 +34,7 @@ no_of_batches = int(no_of_frames/batch_size)
 results_dir = model.project_dir + "results_on_KITTI_seq/"
 
 # create a saver for restoring variables/parameters:
-saver = tf.train.Saver(write_version=tf.train.SaverDef.V2)
+saver = tf.train.Saver(tf.trainable_variables(), write_version=tf.train.SaverDef.V2)
 
 with tf.Session() as sess:
     # initialize all variables/parameters:
