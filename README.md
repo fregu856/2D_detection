@@ -16,7 +16,7 @@ preprocess_data.py:
 *****
 
 model.py:  
-- ASSUMES: that preprocessing_data.py has already been run (or at least that caffemodel_weights.pkl has been placed in 2D_detection/data).
+- ASSUMES: that preprocess_data.py has already been run (or at least that caffemodel_weights.pkl has been placed in 2D_detection/data).
 - DOES: contains the SqueezeDet_model class.
 *****
 
