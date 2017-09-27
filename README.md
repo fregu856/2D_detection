@@ -26,12 +26,12 @@ utilities.py:
 *****
 
 train.py:  
-- ASSUMES: that preprocessing_data.py has already been run.
+- ASSUMES: that preprocess_data.py has already been run.
 - DOES: script for training the model.
 *****
 
 run_on_KITTI_sequence.py:  
-- ASSUMES: that preprocessing_data.py has already been run.
+- ASSUMES: that preprocess_data.py has already been run.
 - DOES: runs a model checkpoint (set in line 45) on all frames in a KITTI test sequence (set in line 28) and creates a video of the result.
 
 ****
